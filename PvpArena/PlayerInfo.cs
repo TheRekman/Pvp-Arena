@@ -11,11 +11,10 @@ namespace PvpArena
     {
         public static string Key = "PvpArena_Info";
         public int PlayerID;
-        public byte MapSave;
+        public bool MapSave;
         public string MapName;
         public string ArenaName;
-        public Point P1 = new Point(0, 0);
-        public Point P2 = new Point(0, 0);
+        public Point Point;
     }
     public static class PlayerExtension
     {

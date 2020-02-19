@@ -112,10 +112,8 @@ namespace PvpArena
             }
             Netplay.ResetSections();
         }
-        public void LoadMapByName(string mapName, Point start)
-        {
-            LoadMap(Maps.First(map => map.Name == mapName), start);
-        }
+        public Map GetMapByName(string mapName) => Maps.FirstOrDefault(map => map.Name == mapName);
+
         private void Swap<T>(ref T first, ref T second)
         {
             T temp = first;
