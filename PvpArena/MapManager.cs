@@ -32,7 +32,11 @@ namespace PvpArena
                 return result.ToArray();
             }
         }
-
+        public void DeleteMap(Map map)
+        {
+            Maps.Remove(map);
+            File.Delete(map.Path);
+        }
         public void LoadMapsInfo()
         {
             var files = Directory.GetFiles(MapPath);
