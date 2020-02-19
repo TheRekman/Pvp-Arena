@@ -25,7 +25,10 @@ namespace PvpArena
             get
             {
                 List<string> result = new List<string>();
-                Maps.ForEach(map => result.Add(map.Name));
+                Maps.ForEach(map =>
+                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2}",
+                                              map.Name, map.Size.X, map.Size.Y))
+                );
                 return result.ToArray();
             }
         }
