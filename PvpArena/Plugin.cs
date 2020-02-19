@@ -41,20 +41,27 @@ namespace PvpArena
         public override void Initialize()
         {
             MapManager = new MapManager(Path.Combine(TShock.SavePath, "[PvpArena] Maps"));
-            Commands.ChatCommands.Add(new Command(MapCmd, "map"));
+            Commands.ChatCommands.Add(new Command(Permissions.MapUse, MapCmd, "map"));
         }
 
         private void MapCmd(CommandArgs args)
         {
-            if (args.Parameters[0] == "save")
+            string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
+            
+            switch (subCmd)
             {
-                MapManager.SaveMap("TestMap", new Point(args.Player.TileX - 20, args.Player.TileY - 20), new Point(args.Player.TileX + 20, args.Player.TileY + 20));
-                args.Player.SendSuccessMessage("Save success!");
-            }
-            else if (args.Parameters[0] == "load")
-            {
-                MapManager.LoadMapByName("TestMap", new Point(args.Player.TileX, args.Player.TileY));
-                args.Player.SendSuccessMessage("Load success!");
+                case "save":
+                    break;
+                case "load":
+                    break;
+                case "list":
+                    break;
+                case "help":
+                    break;
+                default:
+                    args.Player.SendErrorMessage("Invalid sub command! Check /map help for more details.");
+                    break;
+                    
             }
         }
     }
