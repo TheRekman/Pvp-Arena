@@ -53,7 +53,7 @@ namespace PvpArena
         private void OnGetData(GetDataEventArgs args)
         {
             var playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
-            if (playerInfo.MapName == null && playerInfo.ArenaName == null && !playerInfo.MapSave)
+            if (playerInfo.Status == State.None)
                 return;
             switch (args.MsgID)
             {
@@ -96,28 +96,31 @@ namespace PvpArena
         }
         private void SetPoints(Point point, PlayerInfo playerInfo, TSPlayer player)
         {
-            if (playerInfo.MapName != null && !playerInfo.MapSave)
+            switch (playerInfo.Status)
             {
-                MapManager.LoadMap(MapManager.GetMapByName(playerInfo.MapName), point);
-                playerInfo.MapName = null;
-                player.SendSuccessMessage("Map loaded successfully!");
-                return;
+                case State.MapSave:
+                    playerInfo.Point = point;
+                    player.SendSuccessMessage("First point set.");
+                    playerInfo.Status = State.MapSavePoint2;
+                    break;
+                case State.MapSavePoint2:
+                    MapManager.SaveMap(playerInfo.MapName, playerInfo.Point, point);
+                    player.SendSuccessMessage("Map saved successfully!");
+                    playerInfo.MapName = null;
+                    playerInfo.Status = State.None;
+                    break;
+                case State.MapLoad:
+                    MapManager.LoadMap(MapManager.GetMapByName(playerInfo.MapName), point);
+                    player.SendSuccessMessage("Map loaded successfully!");
+                    playerInfo.MapName = null;
+                    playerInfo.Status = State.None;
+                    break;
+                case State.ArenaSet:
+                case State.ArenaSetPoint2:
+                    TShock.Log.ConsoleError("ImpossibleCode");
+                    playerInfo.Status = State.None;
+                    break;
             }
-            else if (playerInfo.ArenaName != null)
-            {
-                TShock.Log.ConsoleError("ImpossibleCode");
-                return;
-            }
-            if (playerInfo.Point == null)
-            {
-                playerInfo.Point = point;
-                player.SendSuccessMessage("First point set.");
-                return;
-            }
-            MapManager.SaveMap(playerInfo.MapName, playerInfo.Point, point);
-            player.SendSuccessMessage("Map saved successfully!");
-            playerInfo.MapName = null;
-            playerInfo.MapSave = false;
         }
         private void MapCmd(CommandArgs args)
         {

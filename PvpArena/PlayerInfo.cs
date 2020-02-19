@@ -10,11 +10,16 @@ namespace PvpArena
     public class PlayerInfo
     {
         public static string Key = "PvpArena_Info";
-        public int PlayerID;
-        public bool MapSave;
+        public State Status;
         public string MapName;
         public string ArenaName;
         public Point Point;
+        public void ClearRequest()
+        {
+            ArenaName = null;
+            MapName = null;
+            Status = State.None;
+        }
     }
     public static class PlayerExtension
     {
@@ -24,5 +29,14 @@ namespace PvpArena
                 player.SetData<PlayerInfo>(PlayerInfo.Key, new PlayerInfo());
             return player.GetData<PlayerInfo>(PlayerInfo.Key);
         }
+    }
+    public enum State
+    {
+        None,
+        MapSave,
+        MapSavePoint2,
+        MapLoad,
+        ArenaSet,
+        ArenaSetPoint2,
     }
 }
