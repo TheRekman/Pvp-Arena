@@ -15,7 +15,6 @@ namespace PvpArena
         public Point Point;
         public void ClearRequest()
         {
-            ArenaName = null;
             Name = null;
             Status = State.None;
         }

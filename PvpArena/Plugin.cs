@@ -147,6 +147,12 @@ namespace PvpArena
                         return;
                     }
                     name = args.Parameters[1];
+                    Map map = MapManager.GetMapByName(name);
+                    if(map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
                     playerInfo = args.Player.GetPlayerInfo();
                     playerInfo.Status = State.MapLoad;
                     playerInfo.Name = name;
@@ -158,7 +164,7 @@ namespace PvpArena
                         args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map del <name>");
                         return;
                     }
-                    Map map = MapManager.GetMapByName(args.Parameters[1]);
+                    map = MapManager.GetMapByName(args.Parameters[1]);
                     if(map == null)
                     {
                         args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
