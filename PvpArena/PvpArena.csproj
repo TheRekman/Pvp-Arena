@@ -55,6 +55,8 @@
   <ItemGroup>
     <Compile Include="Map.cs" />
     <Compile Include="MapManager.cs" />
+    <Compile Include="Permissions.cs" />
+    <Compile Include="PlayerInfo.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

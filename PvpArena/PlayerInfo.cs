@@ -11,13 +11,12 @@ namespace PvpArena
     {
         public static string Key = "PvpArena_Info";
         public State Status;
-        public string MapName;
-        public string ArenaName;
+        public string Name;
         public Point Point;
         public void ClearRequest()
         {
             ArenaName = null;
-            MapName = null;
+            Name = null;
             Status = State.None;
         }
     }

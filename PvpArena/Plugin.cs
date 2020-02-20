@@ -104,15 +104,15 @@ namespace PvpArena
                     playerInfo.Status = State.MapSavePoint2;
                     break;
                 case State.MapSavePoint2:
-                    MapManager.SaveMap(playerInfo.MapName, playerInfo.Point, point);
+                    MapManager.SaveMap(playerInfo.Name, playerInfo.Point, point);
                     player.SendSuccessMessage("Map saved successfully!");
-                    playerInfo.MapName = null;
+                    playerInfo.Name = null;
                     playerInfo.Status = State.None;
                     break;
                 case State.MapLoad:
-                    MapManager.LoadMap(MapManager.GetMapByName(playerInfo.MapName), point);
+                    MapManager.LoadMap(MapManager.GetMapByName(playerInfo.Name), point);
                     player.SendSuccessMessage("Map loaded successfully!");
-                    playerInfo.MapName = null;
+                    playerInfo.Name = null;
                     playerInfo.Status = State.None;
                     break;
                 case State.ArenaSet:
@@ -129,12 +129,81 @@ namespace PvpArena
             switch (subCmd)
             {
                 case "save":
+                    if(args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map save <name>");
+                        return;
+                    }
+                    string name = args.Parameters[1];
+                    var playerInfo = args.Player.GetPlayerInfo();
+                    playerInfo.Status = State.MapSave;
+                    playerInfo.Name = name;
+                    args.Player.SendInfoMessage("Set 2 points or use the grand design.");
                     break;
                 case "load":
+                    if(args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map load <name>");
+                        return;
+                    }
+                    name = args.Parameters[1];
+                    playerInfo = args.Player.GetPlayerInfo();
+                    playerInfo.Status = State.MapLoad;
+                    playerInfo.Name = name;
+                    args.Player.SendInfoMessage("Set point for map load.");
+                    break;
+                case "del":
+                    if (args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map del <name>");
+                        return;
+                    }
+                    Map map = MapManager.GetMapByName(args.Parameters[1]);
+                    if(map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
+                    MapManager.DeleteMap(map);
                     break;
                 case "list":
+                    int page = 1;
+                    if (args.Parameters.Count > 1)
+                        if(!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    PaginationTools.SendPage(args.Player, page, MapManager.MapList,
+                        new PaginationTools.Settings()
+                        {
+                            NothingToDisplayString = "Maps not found. Use /map save <name> for map save.",
+                            HeaderFormat = "Map list ({0}/{1}):",
+                            FooterFormat = "Type /map list {0} for more.",
+                        });
                     break;
                 case "help":
+                    page = 1;
+                    if (args.Parameters.Count > 1)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    var helpList = new List<string>
+                    {
+                        "save - map save in file;",
+                        "load - map load in file;",
+                        "del - delete map file;",
+                        "list - map list;"
+                    };
+                    PaginationTools.SendPage(args.Player, page, helpList,
+                        new PaginationTools.Settings()
+                        {
+                            NothingToDisplayString = "Maps not found. Use /map save <name> for map save.",
+                            HeaderFormat = "Map list ({0}/{1}):",
+                            FooterFormat = "Type /map list {0} for more.",
+                        });
                     break;
                 default:
                     args.Player.SendErrorMessage("Invalid sub command! Check /map help for more details.");

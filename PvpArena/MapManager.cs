@@ -20,16 +20,16 @@ namespace PvpArena
             LoadMapsInfo();
         }
 
-        public string[] MapList
+        public List<string> MapList
         {
             get
             {
                 List<string> result = new List<string>();
                 Maps.ForEach(map =>
-                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2}",
+                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2};",
                                               map.Name, map.Size.X, map.Size.Y))
                 );
-                return result.ToArray();
+                return result;
             }
         }
         public void DeleteMap(Map map)
