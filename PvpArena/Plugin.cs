@@ -59,7 +59,7 @@ namespace PvpArena
             {
                 #region OnTileChange
                 case PacketTypes.Tile:
-                    using(var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer)))
+                    using(var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
                         reader.ReadByte();
                         short x = reader.ReadInt16();
@@ -74,7 +74,7 @@ namespace PvpArena
                 #endregion
                 #region OnMassWire
                 case PacketTypes.MassWireOperation:
-                    using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer)))
+                    using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
                         short x1 = reader.ReadInt16();
                         short y1 = reader.ReadInt16();
