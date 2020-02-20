@@ -54,25 +54,27 @@ namespace PvpArena
             }
         }
 
-        public void SaveMap(string name, Point start, Point end)
+        public void SaveMap(string name, Point first, Point second)
         {
             string FilePath;
             Map map = Maps.FirstOrDefault(mp => mp.Name == name);
             if (map != null) FilePath = map.Path;
             else FilePath = Path.Combine(MapPath, string.Format("{0}-{1}.map", name, DateTime.Now.ToShortDateString()));
-            TShockAPI.TShock.Log.ConsoleInfo(FilePath);
 
-            if (start.X > end.X) Swap(ref start.X, ref end.X);
-            if (start.Y > end.Y) Swap(ref start.Y, ref end.Y);
-            int width = end.X - start.X;
-            int height = end.Y - start.Y;
+            int startX = Math.Min(first.X, second.X);
+            int startY = Math.Min(first.Y, second.Y);
+            int endX = Math.Max(first.X, second.X);
+            int endY = Math.Max(first.Y, second.Y);
+            int width = endX - startX;
+            int height = endY - startY;
+
             using (var writer = new BinaryWriter(File.OpenWrite(FilePath)))
             {
                 writer.Write(width);
                 writer.Write(height);
                 #region Tile Save
-                for (int x = start.X; x < end.X; x++)
-                    for (int y = start.Y; y < end.Y; y++)
+                for (int x = startX; x < endX; x++)
+                    for (int y = startY; y < endY; y++)
                     {
                         writer.Write(Main.tile[x, y].type); //ushort
                         writer.Write(Main.tile[x, y].wall); //byte
@@ -88,6 +90,7 @@ namespace PvpArena
             }
             Maps.Add(new Map(name, FilePath, new Point(width, height)));
         }
+        
         public void LoadMap(Map map, Point start)
         {
             using (var reader = new BinaryReader(File.OpenRead(map.Path)))
@@ -117,12 +120,5 @@ namespace PvpArena
             Netplay.ResetSections();
         }
         public Map GetMapByName(string mapName) => Maps.FirstOrDefault(map => map.Name == mapName);
-
-        private void Swap<T>(ref T first, ref T second)
-        {
-            T temp = first;
-            first = second;
-            second = first;
-        }
     }
 }

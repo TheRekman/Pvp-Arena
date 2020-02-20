@@ -171,6 +171,7 @@ namespace PvpArena
                         return;
                     }
                     MapManager.DeleteMap(map);
+                    args.Player.SendSuccessMessage("Map deleted  successfully!");
                     break;
                 case "list":
                     int page = 1;
@@ -206,9 +207,8 @@ namespace PvpArena
                     PaginationTools.SendPage(args.Player, page, helpList,
                         new PaginationTools.Settings()
                         {
-                            NothingToDisplayString = "Maps not found. Use /map save <name> for map save.",
-                            HeaderFormat = "Map list ({0}/{1}):",
-                            FooterFormat = "Type /map list {0} for more.",
+                            HeaderFormat = "Map sub command list ({0}/{1}):",
+                            FooterFormat = "Type /map help {0} for more.",
                         });
                     break;
                 default:
