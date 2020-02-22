@@ -8,6 +8,9 @@ using TerrariaApi.Server;
 using TShockAPI;
 using System.IO;
 using Microsoft.Xna.Framework;
+using System.Data;
+using Mono.Data.Sqlite;
+using MySql.Data.MySqlClient;
 
 namespace PvpArena
 {
@@ -23,21 +26,23 @@ namespace PvpArena
 
 
         public MapManager MapManager;
+        public ArenaManager ArenaManager;
+        public Config Config;
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-
+                ServerApi.Hooks.GameInitialize.Deregister(this, OnInitialize);
+                ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
             }
+            base.Dispose(disposing);
         }
-
-
 
         public Plugin(Main game) : base(game)
         {
         }
-        
+
         public override void Initialize()
         {
             ServerApi.Hooks.GameInitialize.Register(this, OnInitialize);
@@ -46,10 +51,55 @@ namespace PvpArena
 
         private void OnInitialize(EventArgs args)
         {
-            MapManager = new MapManager(Path.Combine(TShock.SavePath, "[PvpArena] Maps"));
+            Config = Config.Read(Path.Combine(TShock.SavePath, "[PvpArena]-Config.json"));
+            MapManager = new MapManager(Path.Combine(TShock.SavePath, "[PvpArena]-Maps"));
+            IDbConnection db = GetDbConnection();
+            if(db == null)
+            {
+                Dispose(true);
+                return;
+            }
+            ArenaManager = new ArenaManager(db, MapManager);
             Commands.ChatCommands.Add(new Command(Permissions.MapUse, MapCmd, "map"));
+            Commands.ChatCommands.Add(new Command(Permissions.ArenaUse, ArenaCmd, "arena"));
         }
 
+        private IDbConnection GetDbConnection()
+        {
+            IDbConnection db;
+            if (TShock.Config.StorageType.Equals("mysql", StringComparison.OrdinalIgnoreCase))
+            { 
+                if (string.IsNullOrWhiteSpace(Config.MySqlHost) ||
+                    string.IsNullOrWhiteSpace(Config.MySqlDbName))
+                {
+                    TShock.Log.ConsoleError("[PvpArena] MySQL is enabled, but the PvpArena MySQL Configuration has not been set.");
+                    TShock.Log.ConsoleError("[PvpArena] Please configure your MySQL server information in [PvpArena]-Config.json, then restart the server.");
+                    TShock.Log.ConsoleError("[PvpArena] This plugin will now disable itself...");
+
+                    return null;
+                }
+                string[] host = Config.MySqlHost.Split(':');
+                db = new MySqlConnection
+                {
+                    ConnectionString = String.Format("Server={0}; Port={1}; Database={2}; Uid={3}; Pwd={4};",
+                        host[0],
+                        host.Length == 1 ? "3306" : host[1],
+                        Config.MySqlDbName,
+                        Config.MySqlUsername,
+                        Config.MySqlPassword)
+                };
+            }
+            else if (TShock.Config.StorageType.Equals("sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                db = new SqliteConnection(
+                    "uri=file://" + Path.Combine(TShock.SavePath, "PvpArena.sqlite") + ",Version=3");
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid storage type!");
+            }
+            return db;
+        }
         private void OnGetData(GetDataEventArgs args)
         {
             var playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
@@ -59,7 +109,7 @@ namespace PvpArena
             {
                 #region OnTileChange
                 case PacketTypes.Tile:
-                    using(var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
+                    using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
                         reader.ReadByte();
                         short x = reader.ReadInt16();
@@ -91,7 +141,7 @@ namespace PvpArena
                     }
                     args.Handled = true;
                     break;
-                #endregion
+                    #endregion
             }
         }
         private void SetPoints(Point point, PlayerInfo playerInfo, TSPlayer player)
@@ -125,11 +175,11 @@ namespace PvpArena
         private void MapCmd(CommandArgs args)
         {
             string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
-            
+
             switch (subCmd)
             {
                 case "save":
-                    if(args.Parameters.Count < 2)
+                    if (args.Parameters.Count < 2)
                     {
                         args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map save <name>");
                         return;
@@ -141,14 +191,14 @@ namespace PvpArena
                     args.Player.SendInfoMessage("Set 2 points or use the grand design.");
                     break;
                 case "load":
-                    if(args.Parameters.Count < 2)
+                    if (args.Parameters.Count < 2)
                     {
                         args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map load <name>");
                         return;
                     }
                     name = args.Parameters[1];
                     Map map = MapManager.GetMapByName(name);
-                    if(map == null)
+                    if (map == null)
                     {
                         args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
                         return;
@@ -165,7 +215,7 @@ namespace PvpArena
                         return;
                     }
                     map = MapManager.GetMapByName(args.Parameters[1]);
-                    if(map == null)
+                    if (map == null)
                     {
                         args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
                         return;
@@ -176,7 +226,7 @@ namespace PvpArena
                 case "list":
                     int page = 1;
                     if (args.Parameters.Count > 1)
-                        if(!int.TryParse(args.Parameters[1], out page))
+                        if (!int.TryParse(args.Parameters[1], out page))
                         {
                             args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
                             return;
@@ -214,8 +264,14 @@ namespace PvpArena
                 default:
                     args.Player.SendErrorMessage("Invalid sub command! Check /map help for more details.");
                     break;
-                    
+
             }
         }
+
+        private void ArenaCmd(CommandArgs args)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="Arena.cs" />
     <Compile Include="ArenaManager.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="MapManager.cs" />
     <Compile Include="Permissions.cs" />

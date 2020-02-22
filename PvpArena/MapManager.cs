@@ -39,7 +39,7 @@ namespace PvpArena
         }
         public void LoadMapsInfo()
         {
-            var files = Directory.GetFiles(MapPath);
+            var files = Directory.GetFiles(MapPath, "*.dat");
             for(int i = 0; i < files.Length; i++)
             {
                 string name = Path.GetFileName(files[i]).Split('-')[1];

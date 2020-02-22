@@ -9,5 +9,6 @@ namespace PvpArena
     public static class Permissions
     {
         public static readonly string MapUse = "pvparena.map.use";
+        public static readonly string ArenaUse = "pvparena.arena.use";
     }
 }
