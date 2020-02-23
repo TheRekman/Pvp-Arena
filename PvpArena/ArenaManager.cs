@@ -64,9 +64,9 @@ namespace PvpArena
 
         public void Reload()
         {
-            Arenas.Clear();
             using (var reader = DbConnection.QueryReader("SELECT * FROM Arenas WHERE WorldId = @0", Main.worldID.ToString()))
             {
+                Arenas.Clear();
                 while (reader.Read())
                 {
                     int id = reader.Get<int>("Id");
@@ -108,8 +108,9 @@ namespace PvpArena
                     return;
                 }
             }
-
-            Arenas.Add(new Arena(id, name, map, new Point(x, y), new Point(width, height), align));
+            var arena = new Arena(id, name, map, new Point(x, y), new Point(width, height), align);
+            Arenas.Add(arena);
+            LoadArenaMap(arena);
         }
             
         public void RemoveArena(Arena arena)
@@ -140,8 +141,8 @@ namespace PvpArena
             switch (arena.Align)
             {
                 case "c": //center
-                    point = new Point(arena.Position.X / 2 - arena.Map.Size.X / 2,
-                                      arena.Position.Y / 2 - arena.Map.Size.Y / 2);
+                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2,
+                                      arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
                     break;
                 case "tl": //topleft
                     point = arena.Position;
@@ -157,14 +158,14 @@ namespace PvpArena
                                       arena.Position.Y + arena.Size.Y - arena.Map.Size.Y);
                     break;
                 case "l": //left
-                    point = new Point(arena.Position.X, arena.Position.Y / 2 - arena.Map.Size.Y / 2);
+                    point = new Point(arena.Position.X, arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
                     break;
                 case "r": //right
                     point = new Point(arena.Position.X + arena.Size.X - arena.Map.Size.X,
-                                      arena.Position.Y / 2 - arena.Map.Size.Y / 2);
+                                      arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
                     break;
                 case "t": //top
-                    point = new Point(arena.Position.X / 2 - arena.Map.Size.X / 2, arena.Position.Y);
+                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2, arena.Position.Y);
                     break;
                 case "b": //bottom
                     point = new Point(arena.Position.X / 2 - arena.Map.Size.X / 2,

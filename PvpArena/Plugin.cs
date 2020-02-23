@@ -35,6 +35,7 @@ namespace PvpArena
             {
                 ServerApi.Hooks.GameInitialize.Deregister(this, OnInitialize);
                 ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
+                ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
             }
             base.Dispose(disposing);
         }
@@ -47,7 +48,10 @@ namespace PvpArena
         {
             ServerApi.Hooks.GameInitialize.Register(this, OnInitialize);
             ServerApi.Hooks.NetGetData.Register(this, OnGetData);
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnPostInitialize);
         }
+
+        private void OnPostInitialize(EventArgs args) => ArenaManager.Reload();
 
         private void OnInitialize(EventArgs args)
         {
@@ -170,6 +174,12 @@ namespace PvpArena
                     break;
                 case State.ArenaSetPoint2:
                     ArenaManager.SetArena(playerInfo.Name, playerInfo.Point, point, playerInfo.Align, playerInfo.Map);
+                    if (playerInfo.Map.Size.X > point.X - playerInfo.Point.X || playerInfo.Map.Size.Y > point.Y - playerInfo.Point.Y)
+                    {
+                        playerInfo.Status = State.None;
+                        player.SendErrorMessage($"Map size must be smaller than arena size! Request denied.");
+                        return;
+                    }
                     player.SendSuccessMessage("Arena setted successfully!");
                     playerInfo.Status = State.None;
                     break;
@@ -303,26 +313,26 @@ namespace PvpArena
             {
                 #region Define
                 case "define":
-                    if(args.Parameters.Count < 3)
+                    if (args.Parameters.Count < 3)
                     {
                         args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena define <name> <mapname> [align] [width] [height]");
                         return;
                     }
 
                     var arena = ArenaManager.GetArenaByName(args.Parameters[1]);
-                    if(arena != null)
+                    if (arena != null)
                     {
                         args.Player.SendErrorMessage($"Arena {arena.Name} already exist!");
                         return;
                     }
 
                     var map = MapManager.GetMapByName(args.Parameters[2]);
-                    if(map == null)
+                    if (map == null)
                     {
                         args.Player.SendErrorMessage($"Map {args.Parameters[2]} does not exist!");
                         return;
                     }
-
+                    
                     string align;
                     if (args.Parameters.Count > 3)
                     {
@@ -346,6 +356,11 @@ namespace PvpArena
                             args.Player.SendErrorMessage($"Invalid height {args.Parameters[5]}");
                             return;
                         }
+                        if (map.Size.X > size.X || map.Size.Y > size.Y)
+                        {
+                            args.Player.SendErrorMessage($"Map size must be smaller than arena size!");
+                            return;
+                        }
                         playerInfo.Point = size;
                         playerInfo.Status = State.ArenaSetWithSize;
                         args.Player.SendInfoMessage("Set point for create new arena.");
@@ -359,7 +374,7 @@ namespace PvpArena
                     playerInfo.Map = map;
                     playerInfo.Align = align;
 
-                    
+
                     break;
                 #endregion
 
@@ -405,6 +420,11 @@ namespace PvpArena
                         return;
                     }
 
+                    if (map.Size.X > arena.Size.X || map.Size.Y > arena.Size.Y)
+                    {
+                        args.Player.SendErrorMessage($"Map size must be smaller than arena size!");
+                        return;
+                    }
                     ArenaManager.SetMap(arena, map);
                     args.Player.SendSuccessMessage("New map setted.");
                     break;
@@ -451,9 +471,9 @@ namespace PvpArena
                     }
                     int page = 1;
                     if (args.Parameters.Count > 2)
-                        if (!int.TryParse(args.Parameters[1], out page))
+                        if (!int.TryParse(args.Parameters[2], out page))
                         {
-                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[2]}.");
                             return;
                         }
                     PaginationTools.SendPage(args.Player, page, ArenaManager.ArenaInfo(arena),
