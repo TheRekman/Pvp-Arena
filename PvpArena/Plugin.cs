@@ -156,18 +156,26 @@ namespace PvpArena
                 case State.MapSavePoint2:
                     MapManager.SaveMap(playerInfo.Name, playerInfo.Point, point);
                     player.SendSuccessMessage("Map saved successfully!");
-                    playerInfo.Name = null;
                     playerInfo.Status = State.None;
                     break;
                 case State.MapLoad:
                     MapManager.LoadMap(MapManager.GetMapByName(playerInfo.Name), point);
                     player.SendSuccessMessage("Map loaded successfully!");
-                    playerInfo.Name = null;
                     playerInfo.Status = State.None;
                     break;
                 case State.ArenaSet:
+                    playerInfo.Point = point;
+                    player.SendSuccessMessage("First point set.");
+                    playerInfo.Status = State.ArenaSetPoint2;
+                    break;
                 case State.ArenaSetPoint2:
-                    TShock.Log.ConsoleError("ImpossibleCode");
+                    ArenaManager.SetArena(playerInfo.Name, playerInfo.Point, point, playerInfo.Align, playerInfo.Map);
+                    player.SendSuccessMessage("Arena setted successfully!");
+                    playerInfo.Status = State.None;
+                    break;
+                case State.ArenaSetWithSize:
+                    ArenaManager.SetArena(playerInfo.Name, point, new Point(point.X + playerInfo.Point.X, point.Y + playerInfo.Point.Y), playerInfo.Align, playerInfo.Map);
+                    player.SendSuccessMessage("Arena setted successfully!");
                     playerInfo.Status = State.None;
                     break;
             }
@@ -249,10 +257,10 @@ namespace PvpArena
                         }
                     var helpList = new List<string>
                     {
-                        "save - map save in file;",
-                        "load - map load in file;",
-                        "del - delete map file;",
-                        "list - map list;"
+                        "save <mapname> - map save in file;",
+                        "load <mapname> - map load from file;",
+                        "del <mapname> - delete map file;",
+                        "list [page] - map list;"
                     };
                     PaginationTools.SendPage(args.Player, page, helpList,
                         new PaginationTools.Settings()
@@ -267,11 +275,246 @@ namespace PvpArena
 
             }
         }
-
+        private bool CheckAlign(TSPlayer player, string align)
+        {
+            var aligns = new string[]
+            {
+                "c",
+                "t",
+                "b",
+                "l",
+                "r",
+                "tl",
+                "tr",
+                "bl",
+                "br"
+            };
+            foreach (string a in aligns)
+                if (a == align) return true;
+            player.SendErrorMessage("Invalid align. Available aligns: c, t, b, l, r, tl, tr, bl, br");
+            return false;
+        }
         private void ArenaCmd(CommandArgs args)
         {
-            throw new NotImplementedException();
-        }
+            string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
 
+
+            switch (subCmd)
+            {
+                #region Define
+                case "define":
+                    if(args.Parameters.Count < 3)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena define <name> <mapname> [align] [width] [height]");
+                        return;
+                    }
+
+                    var arena = ArenaManager.GetArenaByName(args.Parameters[1]);
+                    if(arena != null)
+                    {
+                        args.Player.SendErrorMessage($"Arena {arena.Name} already exist!");
+                        return;
+                    }
+
+                    var map = MapManager.GetMapByName(args.Parameters[2]);
+                    if(map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map {args.Parameters[2]} does not exist!");
+                        return;
+                    }
+
+                    string align;
+                    if (args.Parameters.Count > 3)
+                    {
+                        if (!CheckAlign(args.Player, args.Parameters[3].ToLower()))
+                            return;
+                        align = args.Parameters[3].ToLower();
+                    }
+                    else align = "c";
+
+                    var playerInfo = args.Player.GetPlayerInfo();
+                    if (args.Parameters.Count == 6)
+                    {
+                        Point size;
+                        if (!int.TryParse(args.Parameters[4], out size.X))
+                        {
+                            args.Player.SendErrorMessage($"Invalid width {args.Parameters[4]}");
+                            return;
+                        }
+                        if (!int.TryParse(args.Parameters[5], out size.Y))
+                        {
+                            args.Player.SendErrorMessage($"Invalid height {args.Parameters[5]}");
+                            return;
+                        }
+                        playerInfo.Point = size;
+                        playerInfo.Status = State.ArenaSetWithSize;
+                        args.Player.SendInfoMessage("Set point for create new arena.");
+                    }
+                    else
+                    {
+                        playerInfo.Status = State.ArenaSet;
+                        args.Player.SendInfoMessage("Set 2 point or use The Grand Design for create new arena.");
+                    }
+                    playerInfo.Name = args.Parameters[1];
+                    playerInfo.Map = map;
+                    playerInfo.Align = align;
+
+                    
+                    break;
+                #endregion
+
+                #region Delete
+                case "delete":
+                    if (args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena delete <name> ");
+                        return;
+                    }
+
+                    arena = ArenaManager.GetArenaByName(args.Parameters[1]);
+                    if (arena == null)
+                    {
+                        args.Player.SendErrorMessage($"Arena {args.Parameters[1]} does not exist!");
+                        return;
+                    }
+
+                    ArenaManager.RemoveArena(arena);
+                    args.Player.SendSuccessMessage("Arena deleted successfully.");
+                    break;
+                #endregion
+
+                #region Setmap
+                case "setmap":
+                    if (args.Parameters.Count < 3)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena setmap <name> <mapname> ");
+                        return;
+                    }
+
+                    arena = ArenaManager.GetArenaByName(args.Parameters[1]);
+                    if (arena == null)
+                    {
+                        args.Player.SendErrorMessage($"Arena {args.Parameters[1]} does not exist!");
+                        return;
+                    }
+
+                    map = MapManager.GetMapByName(args.Parameters[2]);
+                    if (map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map {args.Parameters[2]} does not exist!");
+                        return;
+                    }
+
+                    ArenaManager.SetMap(arena, map);
+                    args.Player.SendSuccessMessage("New map setted.");
+                    break;
+                #endregion
+
+                #region Align
+                case "align":
+                    if (args.Parameters.Count < 3)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena info <name> <align>");
+                        return;
+                    }
+
+                    arena = ArenaManager.GetArenaByName(args.Parameters[1]);
+                    if (arena == null)
+                    {
+                        args.Player.SendErrorMessage($"Arena {args.Parameters[1]} does not exist!");
+                        return;
+                    }
+
+
+                    if (!CheckAlign(args.Player, args.Parameters[2].ToLower()))
+                        return;
+                    align = args.Parameters[2].ToLower();
+
+                    ArenaManager.SetAlign(arena, align);
+                    args.Player.SendSuccessMessage("New align setted.");
+                    break;
+
+                #endregion
+
+                #region Info
+                case "info":
+                    if(args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /arena info <name> [page number]");
+                        return;
+                    }
+                    arena = ArenaManager.GetArenaByName(args.Parameters[1]);
+                    if(arena == null)
+                    {
+                        args.Player.SendErrorMessage($"Arena {args.Parameters[1]} does not exist!");
+                        return;
+                    }
+                    int page = 1;
+                    if (args.Parameters.Count > 2)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    PaginationTools.SendPage(args.Player, page, ArenaManager.ArenaInfo(arena),
+                        new PaginationTools.Settings()
+                        {
+                            NothingToDisplayString = "Arena not found. Use /arena define <name> <mapname> for create arena.",
+                            HeaderFormat = "Arena info ({0}/{1}):",
+                            FooterFormat = "Type /arena info " + arena.Name + " {0} for more.",
+                        });
+                    break;
+                #endregion
+
+                #region List
+                case "list":
+                    page = 1;
+                    if (args.Parameters.Count > 1)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    PaginationTools.SendPage(args.Player, page, PaginationTools.BuildLinesFromTerms(ArenaManager.ArenaList),
+                        new PaginationTools.Settings()
+                        {
+                            HeaderFormat = "Arena list ({0}/{1}):",
+                            FooterFormat = "Type /arena list {0} for more.",
+                        });
+                    break;
+                #endregion
+
+                #region Help
+                case "help":
+                    page = 1;
+                    if (args.Parameters.Count > 1)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    var helpList = new List<string>
+                    {
+                        "define <name> <mapname> [align] [width] [height] - create arena.",
+                        "delete <name> - remove arena.",
+                        "setmap <name> <mapname> - set new map for arena",
+                        "align <name> <align> - set new align for arena",
+                        "info <name> - return info about arena",
+                        "list [page] - return arena list"
+                    };
+                    PaginationTools.SendPage(args.Player, page, helpList,
+                        new PaginationTools.Settings()
+                        {
+                            HeaderFormat = "Arena sub command list ({0}/{1}):",
+                            FooterFormat = "Type /arena help {0} for more.",
+                        });
+                    break;
+                #endregion
+
+                default:
+                    args.Player.SendErrorMessage("Invalid sub command! Check /arena help for more details.");
+                    break;
+            }
+        }
     }
 }

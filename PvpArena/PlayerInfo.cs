@@ -12,12 +12,9 @@ namespace PvpArena
         public static string Key = "PvpArena_Info";
         public State Status;
         public string Name;
+        public Map Map;
         public Point Point;
-        public void ClearRequest()
-        {
-            Name = null;
-            Status = State.None;
-        }
+        public string Align;
     }
     public static class PlayerExtension
     {
@@ -35,6 +32,7 @@ namespace PvpArena
         MapSavePoint2,
         MapLoad,
         ArenaSet,
-        ArenaSetPoint2,
+        ArenaSetWithSize,
+        ArenaSetPoint2
     }
 }
