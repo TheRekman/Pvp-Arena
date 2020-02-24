@@ -31,7 +31,7 @@ namespace PvpArena
             new List<string>
             {
                 $"Name: {arena.Name};",
-                $"X: {arena.Position.X}, Y: {arena.Position.Y};",          
+                $"X: {arena.Position.X}, Y: {arena.Position.Y};",
                 $"Width: {arena.Size.X};",
                 $"Height: {arena.Size.Y};",
                 $"Map: {arena.Map}",
@@ -95,7 +95,7 @@ namespace PvpArena
 
             DbConnection.Query(
                 "INSERT INTO Arenas (Name, X, Y, Width, Height, MapName, Align, WorldId) VALUES (@0, @1, @2, @3, @4, @5, @6, @7)",
-                name, x, y, width, height, map.Name, align, Main.worldID.ToString()) ;
+                name, x, y, width, height, map.Name, align, Main.worldID.ToString());
             int id;
             using (QueryResult res = DbConnection.QueryReader("SELECT Id FROM Arenas WHERE Name = @0 AND WorldId = @1", name, Main.worldID.ToString()))
             {
@@ -112,7 +112,7 @@ namespace PvpArena
             Arenas.Add(arena);
             LoadArenaMap(arena);
         }
-            
+
         public void RemoveArena(Arena arena)
         {
             DbConnection.Query("DELETE FROM Arenas WHERE Name = @0 AND WorldId = @1", arena.Name, Main.worldID.ToString());
@@ -175,8 +175,19 @@ namespace PvpArena
                     point = arena.Position;
                     break;
             }
-            
+            ClearArea(arena.Position, new Point(arena.Position.X + arena.Size.X, arena.Position.Y + arena.Size.Y));
             MapManager.LoadMap(arena.Map, point);
+        }
+
+        private void ClearArea(Point first, Point second)
+        {
+            int startX = Math.Min(first.X, second.X);
+            int startY = Math.Min(first.Y, second.Y);
+            int endX = Math.Max(first.X, second.X);
+            int endY = Math.Max(first.Y, second.Y);
+            for (int x = startX; x < endX; x++)
+                for (int y = startY; y < endY; y++)
+                    Main.tile[x, y] = new Tile();
         }
     }
 }

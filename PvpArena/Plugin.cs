@@ -209,6 +209,7 @@ namespace PvpArena
             }
             TShock.Regions.AddRegion(arena.Position.X, arena.Position.Y, arena.Size.X, arena.Size.Y, regionName, player.User.Name, Main.worldID.ToString());
         }
+
         private void MapCmd(CommandArgs args)
         {
             string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
