@@ -376,6 +376,8 @@ namespace PvpArena
                             args.Player.SendErrorMessage($"Invalid height {args.Parameters[5]}");
                             return;
                         }
+                        size.X--;
+                        size.Y--;
                         if (map.Size.X > size.X || map.Size.Y > size.Y)
                         {
                             args.Player.SendErrorMessage($"Map size must be smaller than arena size!");
