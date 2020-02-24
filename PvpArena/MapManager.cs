@@ -26,8 +26,8 @@ namespace PvpArena
             {
                 List<string> result = new List<string>();
                 Maps.ForEach(map =>
-                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2}; DateCreation: {3}",
-                                              map.Name, map.Size.X, map.Size.Y, map.Path.Split('-')[2].Split('.')[0]))
+                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2};",
+                                              map.Name, map.Size.X, map.Size.Y))
                 );
                 return result;
             }
