@@ -18,7 +18,7 @@ namespace PvpArena
     public class Plugin : TerrariaPlugin
     {
 
-        public override string Author => "Noname";
+        public override string Author => "Rekman";
 
         public override string Description => "Add functonal for pvp arena";
 
