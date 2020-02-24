@@ -182,13 +182,32 @@ namespace PvpArena
                     }
                     player.SendSuccessMessage("Arena setted successfully!");
                     playerInfo.Status = State.None;
+                    if (Config.PrivateAutoCreate)
+                        CreateRegionForArena(ArenaManager.GetArenaByName(playerInfo.Name), player);
                     break;
                 case State.ArenaSetWithSize:
-                    ArenaManager.SetArena(playerInfo.Name, point, new Point(point.X + playerInfo.Point.X, point.Y + playerInfo.Point.Y), playerInfo.Align, playerInfo.Map);
+                    var size = new Point(point.X + playerInfo.Point.X, point.Y + playerInfo.Point.Y);
+                    ArenaManager.SetArena(playerInfo.Name, point, size, playerInfo.Align, playerInfo.Map);
                     player.SendSuccessMessage("Arena setted successfully!");
                     playerInfo.Status = State.None;
+                    if(Config.PrivateAutoCreate)
+                        CreateRegionForArena(ArenaManager.GetArenaByName(playerInfo.Name), player);
                     break;
             }
+        }
+
+        private void CreateRegionForArena(Arena arena, TSPlayer player)
+        {
+            string regionName = string.Format("PvpArena-{0}", arena.Name);
+            var region = TShock.Regions.GetRegionByName(regionName);
+            int i = 1;
+            while (region != null)
+            {
+                regionName = string.Format("PvpArena-{0}:{1}", arena.Name, i);
+                region = TShock.Regions.GetRegionByName(regionName);
+                i++;
+            }
+            TShock.Regions.AddRegion(arena.Position.X, arena.Position.Y, arena.Size.X, arena.Size.Y, regionName, player.User.Name, Main.worldID.ToString());
         }
         private void MapCmd(CommandArgs args)
         {
