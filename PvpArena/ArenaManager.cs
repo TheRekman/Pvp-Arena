@@ -168,7 +168,7 @@ namespace PvpArena
                     point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2, arena.Position.Y);
                     break;
                 case "b": //bottom
-                    point = new Point(arena.Position.X / 2 - arena.Map.Size.X / 2,
+                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2,
                                       arena.Position.Y + arena.Size.Y - arena.Map.Size.Y);
                     break;
                 default:
@@ -185,8 +185,8 @@ namespace PvpArena
             int startY = Math.Min(first.Y, second.Y);
             int endX = Math.Max(first.X, second.X);
             int endY = Math.Max(first.Y, second.Y);
-            for (int x = startX; x < endX; x++)
-                for (int y = startY; y < endY; y++)
+            for (int x = startX; x <= endX; x++)
+                for (int y = startY; y <= endY; y++)
                     Main.tile[x, y] = new Tile();
         }
     }

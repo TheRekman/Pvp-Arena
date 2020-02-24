@@ -73,8 +73,8 @@ namespace PvpArena
                 writer.Write(width);
                 writer.Write(height);
                 #region Tile Save
-                for (int x = startX; x < endX; x++)
-                    for (int y = startY; y < endY; y++)
+                for (int x = startX; x <= endX; x++)
+                    for (int y = startY; y <= endY; y++)
                     {
                         writer.Write(Main.tile[x, y].type); //ushort
                         writer.Write(Main.tile[x, y].wall); //byte
@@ -98,8 +98,8 @@ namespace PvpArena
                 int width = reader.ReadInt32();
                 int height = reader.ReadInt32();
                 #region Tile Load
-                for (int i = 0; i < width; i++)
-                    for(int j = 0; j < height; j++)
+                for (int i = 0; i <= width; i++)
+                    for(int j = 0; j <= height; j++)
                     {
                         int x = i + start.X;
                         int y = j + start.Y;
