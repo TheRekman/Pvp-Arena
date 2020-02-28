@@ -106,13 +106,14 @@ namespace PvpArena
         }
         private void OnGetData(GetDataEventArgs args)
         {
-            var playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
-            if (playerInfo.State == State.None)
-                return;
+            
             switch (args.MsgID)
             {
                 #region OnTileChange
                 case PacketTypes.Tile:
+                    var playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
+                    if (playerInfo.State == State.None)
+                        return;
                     using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
                         reader.ReadByte();
@@ -128,6 +129,9 @@ namespace PvpArena
                 #endregion
                 #region OnMassWire
                 case PacketTypes.MassWireOperation:
+                    playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
+                    if (playerInfo.State == State.None)
+                        return;
                     using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
                         short x1 = reader.ReadInt16();
@@ -145,7 +149,39 @@ namespace PvpArena
                     }
                     args.Handled = true;
                     break;
+                #endregion
+                #region OnDeath
+                case PacketTypes.PlayerDeathV2:
+                    var arena = ArenaManager.InArea(TShock.Players[args.Msg.whoAmI]);
+                    if (arena == null) return;
+                    using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
+                    {
+                        reader.ReadInt32();
+                        Terraria.DataStructures.PlayerDeathReason.FromReader(reader);
+                        reader.ReadInt16();
+                        reader.ReadByte();
+                        BitsByte bitsByte = reader.ReadByte();
+                        if(bitsByte[2])
+                        {
+                            playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
+                            Random rnd = new Random();
+                            Point spawnPoint = arena.Map.Spawns[rnd.Next(0, arena.Map.Spawns.Length - 1)];
+                            playerInfo.SpawnPoint = new Point((spawnPoint.X + arena.Position.X) * 16,
+                                                              (spawnPoint.Y + arena.Position.Y) * 16);
+                        }
+                    }
+                    break;
+                #endregion
+                #region OnSpawn
+                case PacketTypes.PlayerSpawn:
+                    playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
+                    if (playerInfo.SpawnPoint.X < 0) return;
+                    TShock.Players[args.Msg.whoAmI].Teleport(playerInfo.SpawnPoint.X, playerInfo.SpawnPoint.Y);
+                    playerInfo.SpawnPoint.X = -1;
+                    TShock.Players[args.Msg.whoAmI].SendInfoMessage("You automatically teleported to the arena.");
+                    break;
                     #endregion
+
             }
         }
         private void AreaFromPoints(ref Point min, ref Point max)

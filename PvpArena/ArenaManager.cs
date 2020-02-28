@@ -62,6 +62,10 @@ namespace PvpArena
             creator.EnsureTableStructure(table);
         }
 
+
+        public Arena InArea(TShockAPI.TSPlayer player) =>
+            Arenas.FirstOrDefault(arena => player.TileX > arena.Position.X && player.TileX < arena.Position.X + arena.Size.X &&
+                                           player.TileY > arena.Position.Y && player.TileY < arena.Position.Y + arena.Size.Y);
         public void Reload()
         {
             using (var reader = DbConnection.QueryReader("SELECT * FROM Arenas WHERE WorldId = @0", Main.worldID.ToString()))
