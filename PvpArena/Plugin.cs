@@ -107,7 +107,7 @@ namespace PvpArena
         private void OnGetData(GetDataEventArgs args)
         {
             var playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
-            if (playerInfo.Status == State.None)
+            if (playerInfo.State == State.None)
                 return;
             switch (args.MsgID)
             {
@@ -148,40 +148,68 @@ namespace PvpArena
                     #endregion
             }
         }
+        private void AreaFromPoints(ref Point min, ref Point max)
+        {
+            if(min.X > max.X)
+            {
+                int temp = min.X;
+                min.X = max.X;
+                max.X = temp;
+            }
+            if (min.Y > max.Y)
+            {
+                int temp = min.Y;
+                min.Y = max.Y;
+                max.Y = temp;
+            }
+        }
         private void SetPoints(Point point, PlayerInfo playerInfo, TSPlayer player)
         {
-            switch (playerInfo.Status)
+            switch (playerInfo.State)
             {
                 case State.MapSave:
                     playerInfo.Point = point;
                     player.SendSuccessMessage("First point set.");
-                    playerInfo.Status = State.MapSavePoint2;
+                    playerInfo.State = State.MapSavePoint2;
                     break;
                 case State.MapSavePoint2:
-                    MapManager.SaveMap(playerInfo.Name, playerInfo.Point, point);
-                    player.SendSuccessMessage("Map saved successfully!");
-                    playerInfo.Status = State.None;
+                    playerInfo.Point2 = point;
+                    player.SendSuccessMessage("Second point set.");
+                    player.SendSuccessMessage("Select points for spawns.");
+                    AreaFromPoints(ref playerInfo.Point, ref playerInfo.Point2);
+                    playerInfo.State = State.MapSaveSetSpawns;
+                    playerInfo.Spawns = new List<Point>();
+                    break;
+                case State.MapSaveSetSpawns:
+                    if (point.X < playerInfo.Point.X || point.X > playerInfo.Point2.X ||
+                        point.Y < playerInfo.Point.Y || point.Y > playerInfo.Point2.Y )
+                    {
+                        player.SendErrorMessage("Spawn points must be in save area!");
+                        return;
+                    }
+                    playerInfo.Spawns.Add(new Point(point.X - playerInfo.Point.X, point.Y - playerInfo.Point.Y));
+                    player.SendSuccessMessage($"Spawn {playerInfo.Spawns.Count} setted. Use /map end for finnaly save.");
                     break;
                 case State.MapLoad:
                     MapManager.LoadMap(MapManager.GetMapByName(playerInfo.Name), point);
                     player.SendSuccessMessage("Map loaded successfully!");
-                    playerInfo.Status = State.None;
+                    playerInfo.State = State.None;
                     break;
                 case State.ArenaSet:
                     playerInfo.Point = point;
                     player.SendSuccessMessage("First point set.");
-                    playerInfo.Status = State.ArenaSetPoint2;
+                    playerInfo.State = State.ArenaSetPoint2;
                     break;
                 case State.ArenaSetPoint2:
                     ArenaManager.SetArena(playerInfo.Name, playerInfo.Point, point, playerInfo.Align, playerInfo.Map);
                     if (playerInfo.Map.Size.X > point.X - playerInfo.Point.X || playerInfo.Map.Size.Y > point.Y - playerInfo.Point.Y)
                     {
-                        playerInfo.Status = State.None;
+                        playerInfo.State = State.None;
                         player.SendErrorMessage($"Map size must be smaller than arena size! Request denied.");
                         return;
                     }
                     player.SendSuccessMessage("Arena setted successfully!");
-                    playerInfo.Status = State.None;
+                    playerInfo.State = State.None;
                     if (Config.PrivateAutoCreate)
                         CreateRegionForArena(ArenaManager.GetArenaByName(playerInfo.Name), player);
                     break;
@@ -189,7 +217,7 @@ namespace PvpArena
                     var size = new Point(point.X + playerInfo.Point.X, point.Y + playerInfo.Point.Y);
                     ArenaManager.SetArena(playerInfo.Name, point, size, playerInfo.Align, playerInfo.Map);
                     player.SendSuccessMessage("Arena setted successfully!");
-                    playerInfo.Status = State.None;
+                    playerInfo.State = State.None;
                     if(Config.PrivateAutoCreate)
                         CreateRegionForArena(ArenaManager.GetArenaByName(playerInfo.Name), player);
                     break;
@@ -224,7 +252,7 @@ namespace PvpArena
                     }
                     string name = args.Parameters[1];
                     var playerInfo = args.Player.GetPlayerInfo();
-                    playerInfo.Status = State.MapSave;
+                    playerInfo.State = State.MapSave;
                     playerInfo.Name = name;
                     args.Player.SendInfoMessage("Set 2 points or use the grand design.");
                     break;
@@ -242,7 +270,7 @@ namespace PvpArena
                         return;
                     }
                     playerInfo = args.Player.GetPlayerInfo();
-                    playerInfo.Status = State.MapLoad;
+                    playerInfo.State = State.MapLoad;
                     playerInfo.Name = name;
                     args.Player.SendInfoMessage("Set point for map load.");
                     break;
@@ -260,6 +288,18 @@ namespace PvpArena
                     }
                     MapManager.DeleteMap(map);
                     args.Player.SendSuccessMessage("Map deleted  successfully!");
+                    break;
+                case "end":
+                    playerInfo = args.Player.GetPlayerInfo();
+                    if(playerInfo.State != State.MapSaveSetSpawns)
+                    {
+                        args.Player.SendErrorMessage("You dont have active spawn define request. Use /region define and set map area.");
+                        return;
+                    }
+                    MapManager.SaveMap(playerInfo.Name, playerInfo.Point, playerInfo.Point2, playerInfo.Spawns.ToArray());
+                    args.Player.SendSuccessMessage("Map successfully saved.");
+                    playerInfo.Spawns = null;
+                    playerInfo.State = State.None;
                     break;
                 case "list":
                     int page = 1;
@@ -384,12 +424,12 @@ namespace PvpArena
                             return;
                         }
                         playerInfo.Point = size;
-                        playerInfo.Status = State.ArenaSetWithSize;
+                        playerInfo.State = State.ArenaSetWithSize;
                         args.Player.SendInfoMessage("Set point for create new arena.");
                     }
                     else
                     {
-                        playerInfo.Status = State.ArenaSet;
+                        playerInfo.State = State.ArenaSet;
                         args.Player.SendInfoMessage("Set 2 point or use The Grand Design for create new arena.");
                     }
                     playerInfo.Name = args.Parameters[1];

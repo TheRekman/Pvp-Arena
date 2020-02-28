@@ -10,11 +10,13 @@ namespace PvpArena
     public class PlayerInfo
     {
         public static string Key = "PvpArena_Info";
-        public State Status;
+        public State State;
         public string Name;
         public Map Map;
         public Point Point;
+        public Point Point2;
         public string Align;
+        public List<Point> Spawns;
     }
     public static class PlayerExtension
     {
@@ -30,6 +32,7 @@ namespace PvpArena
         None,
         MapSave,
         MapSavePoint2,
+        MapSaveSetSpawns,
         MapLoad,
         ArenaSet,
         ArenaSetWithSize,
