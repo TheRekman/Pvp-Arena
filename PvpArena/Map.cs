@@ -13,11 +13,14 @@ namespace PvpArena
         public string Path { get; }
         public Point Size { get; }
 
-        public Map(string name, string path, Point size)
+        public Point[] Spawns { get; }
+
+        public Map(string name, string path, Point size, Point[] spawns)
         {
             Name = name;
             Path = path;
             Size = size;
+            Spawns = spawns;
         }
     }
 }

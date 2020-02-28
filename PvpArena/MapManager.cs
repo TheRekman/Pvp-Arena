@@ -45,16 +45,25 @@ namespace PvpArena
                 string name = Path.GetFileName(files[i]).Split('-')[1];
                 int width;
                 int height;
+                Point[] spawns;
                 using (var reader = new BinaryReader(File.OpenRead(files[i])))
                 {
                     width = reader.ReadInt32();
                     height = reader.ReadInt32();
+                    int spawnCount = reader.ReadInt32();
+                    spawns = new Point[spawnCount];
+                    for (int j = 0; j < spawnCount; j++)
+                    {
+                        int x = reader.ReadInt32();
+                        int y = reader.ReadInt32();
+                        spawns[i] = new Point(x, y);
+                    }
                 }
-                Maps.Add(new Map(name, files[i], new Point(width, height)));
+                Maps.Add(new Map(name, files[i], new Point(width, height), spawns));
             }
         }
 
-        public void SaveMap(string name, Point first, Point second)
+        public void SaveMap(string name, Point first, Point second, Point[] spawns)
         {
             string FilePath;
             Map map = Maps.FirstOrDefault(mp => mp.Name == name);
@@ -72,6 +81,12 @@ namespace PvpArena
             {
                 writer.Write(width);
                 writer.Write(height);
+                writer.Write(spawns.Length);
+                for(int i = 0; i < spawns.Length; i++)
+                {
+                    writer.Write(spawns[i].X);
+                    writer.Write(spawns[i].Y);
+                }
                 #region Tile Save
                 for (int x = startX; x <= endX; x++)
                     for (int y = startY; y <= endY; y++)
@@ -87,8 +102,9 @@ namespace PvpArena
                         writer.Write(Main.tile[x, y].liquid); //byte
                     }
                 #endregion
+
             }
-            Maps.Add(new Map(name, FilePath, new Point(width, height)));
+            Maps.Add(new Map(name, FilePath, new Point(width, height), spawns));
         }
         
         public void LoadMap(Map map, Point start)
@@ -97,6 +113,14 @@ namespace PvpArena
             {
                 int width = reader.ReadInt32();
                 int height = reader.ReadInt32();
+                int spawnCount = reader.ReadInt32();
+                Point[] spawns = new Point[spawnCount];
+                for(int i = 0; i < spawnCount; i++)
+                {
+                    int x = reader.ReadInt32();
+                    int y = reader.ReadInt32();
+                    spawns[i] = new Point(x, y);
+                }
                 #region Tile Load
                 for (int i = 0; i <= width; i++)
                     for(int j = 0; j <= height; j++)
