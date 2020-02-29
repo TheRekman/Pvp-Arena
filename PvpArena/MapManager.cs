@@ -56,7 +56,7 @@ namespace PvpArena
                     {
                         int x = reader.ReadInt32();
                         int y = reader.ReadInt32();
-                        spawns[i] = new Point(x, y);
+                        spawns[j] = new Point(x, y);
                     }
                 }
                 Maps.Add(new Map(name, files[i], new Point(width, height), spawns));

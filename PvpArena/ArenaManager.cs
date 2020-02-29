@@ -141,46 +141,8 @@ namespace PvpArena
 
         public void LoadArenaMap(Arena arena)
         {
-            Point point;
-            switch (arena.Align)
-            {
-                case "c": //center
-                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2,
-                                      arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
-                    break;
-                case "tl": //topleft
-                    point = arena.Position;
-                    break;
-                case "tr": //topright
-                    point = new Point(arena.Position.X + arena.Size.X - arena.Map.Size.X, arena.Position.Y);
-                    break;
-                case "bl": //bottomleft
-                    point = new Point(arena.Position.X, arena.Position.Y + arena.Size.Y - arena.Map.Size.Y);
-                    break;
-                case "br": //bottomright
-                    point = new Point(arena.Position.X + arena.Size.X - arena.Map.Size.X,
-                                      arena.Position.Y + arena.Size.Y - arena.Map.Size.Y);
-                    break;
-                case "l": //left
-                    point = new Point(arena.Position.X, arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
-                    break;
-                case "r": //right
-                    point = new Point(arena.Position.X + arena.Size.X - arena.Map.Size.X,
-                                      arena.Position.Y + arena.Size.Y / 2 - arena.Map.Size.Y / 2);
-                    break;
-                case "t": //top
-                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2, arena.Position.Y);
-                    break;
-                case "b": //bottom
-                    point = new Point(arena.Position.X + arena.Size.X / 2 - arena.Map.Size.X / 2,
-                                      arena.Position.Y + arena.Size.Y - arena.Map.Size.Y);
-                    break;
-                default:
-                    point = arena.Position;
-                    break;
-            }
             ClearArea(arena.Position, new Point(arena.Position.X + arena.Size.X, arena.Position.Y + arena.Size.Y));
-            MapManager.LoadMap(arena.Map, point);
+            MapManager.LoadMap(arena.Map, arena.MapPoint);
         }
 
         private void ClearArea(Point first, Point second)

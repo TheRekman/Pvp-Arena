@@ -143,7 +143,7 @@ namespace PvpArena
                             x2 < Main.maxTilesX && y2 < Main.maxTilesY)
                         {
                             SetPoints(new Point(x1, y1), playerInfo, TShock.Players[args.Msg.whoAmI]);
-                            if (x1 != x2 || y1 != y2)
+                            if (x1 != x2 || y1 != y2 && playerInfo.State != State.MapSaveSetSpawns)
                                 SetPoints(new Point(x2, y2), playerInfo, TShock.Players[args.Msg.whoAmI]);
                         }
                     }
@@ -156,18 +156,18 @@ namespace PvpArena
                     if (arena == null) return;
                     using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                     {
-                        reader.ReadInt32();
+                        reader.ReadByte();
                         Terraria.DataStructures.PlayerDeathReason.FromReader(reader);
                         reader.ReadInt16();
                         reader.ReadByte();
                         BitsByte bitsByte = reader.ReadByte();
-                        if(bitsByte[2])
+                        if(bitsByte[0])
                         {
                             playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
                             Random rnd = new Random();
                             Point spawnPoint = arena.Map.Spawns[rnd.Next(0, arena.Map.Spawns.Length - 1)];
-                            playerInfo.SpawnPoint = new Point((spawnPoint.X + arena.Position.X) * 16,
-                                                              (spawnPoint.Y + arena.Position.Y) * 16);
+                            playerInfo.SpawnPoint = new Point((spawnPoint.X + arena.MapPoint.X) * 16,
+                                                              (spawnPoint.Y + arena.MapPoint.Y) * 16);
                         }
                     }
                     break;
