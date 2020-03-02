@@ -8,6 +8,7 @@ using MySql.Data.MySqlClient;
 using TShockAPI.DB;
 using Terraria;
 using Microsoft.Xna.Framework;
+using TShockAPI;
 
 namespace PvpArena
 {
@@ -63,9 +64,11 @@ namespace PvpArena
         }
 
 
-        public Arena InArea(TShockAPI.TSPlayer player) =>
-            Arenas.FirstOrDefault(arena => player.TileX > arena.Position.X && player.TileX < arena.Position.X + arena.Size.X &&
-                                           player.TileY > arena.Position.Y && player.TileY < arena.Position.Y + arena.Size.Y);
+        public Arena InArea(TSPlayer player) =>
+            Arenas.FirstOrDefault(arena => CheckInArea(player, arena));
+        public bool CheckInArea(TSPlayer player, Arena arena) =>
+            player.TileX > arena.Position.X && player.TileX < arena.Position.X + arena.Size.X &&
+            player.TileY > arena.Position.Y && player.TileY < arena.Position.Y + arena.Size.Y;
         public void Reload()
         {
             using (var reader = DbConnection.QueryReader("SELECT * FROM Arenas WHERE WorldId = @0", Main.worldID.ToString()))
@@ -138,6 +141,15 @@ namespace PvpArena
         }
 
         public Arena GetArenaByName(string name) => Arenas.FirstOrDefault(arena => arena.Name == name);
+
+        public List<TSPlayer> GetPlayersInArena(Arena arena)
+        {
+            List<TSPlayer> result = new List<TSPlayer>();
+            for (int i = 0; i < TShock.Players.Count(); i++)
+                if (TShock.Players[i].Active && CheckInArea(TShock.Players[i], arena))
+                    result.Add(TShock.Players[i]);
+            return result;
+        }
 
         public void LoadArenaMap(Arena arena)
         {
