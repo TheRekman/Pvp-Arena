@@ -28,6 +28,7 @@ namespace PvpArena
         public MapManager MapManager;
         public ArenaManager ArenaManager;
         public Config Config;
+        public List<Voting> Votings;
 
         protected override void Dispose(bool disposing)
         {
@@ -36,6 +37,7 @@ namespace PvpArena
                 ServerApi.Hooks.GameInitialize.Deregister(this, OnInitialize);
                 ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnPostInitialize);
+                ServerApi.Hooks.GameUpdate.Deregister(this, OnUpdate);
             }
             base.Dispose(disposing);
         }
@@ -49,6 +51,7 @@ namespace PvpArena
             ServerApi.Hooks.GameInitialize.Register(this, OnInitialize);
             ServerApi.Hooks.NetGetData.Register(this, OnGetData);
             ServerApi.Hooks.GamePostInitialize.Register(this, OnPostInitialize);
+            ServerApi.Hooks.GameUpdate.Register(this, OnUpdate);
         }
 
         private void OnPostInitialize(EventArgs args) => ArenaManager.Reload();
@@ -64,8 +67,10 @@ namespace PvpArena
                 return;
             }
             ArenaManager = new ArenaManager(db, MapManager);
+            Votings = new List<Voting>();
             Commands.ChatCommands.Add(new Command(Permissions.MapUse, MapCmd, "map"));
             Commands.ChatCommands.Add(new Command(Permissions.ArenaUse, ArenaCmd, "arena"));
+            Commands.ChatCommands.Add(new Command(Permissions.VoteUse, VoteCmd, "vote"));
         }
 
         private IDbConnection GetDbConnection()
@@ -104,6 +109,7 @@ namespace PvpArena
             }
             return db;
         }
+
         private void OnGetData(GetDataEventArgs args)
         {
             
@@ -184,6 +190,24 @@ namespace PvpArena
 
             }
         }
+
+        private void OnUpdate(EventArgs args)
+        {
+            for (int i = 0; i < Votings.Count; i++)
+                if (Votings[i].CheckEnd())
+                {
+                    var arena = Votings[i].Arena;
+                    var map = Votings[i].GetWinner();
+                    ArenaManager.SetMap(arena, map);
+                    arena.LastVote = DateTime.Now;
+                    var nextVoteTime = DateTime.Now.AddSeconds(Config.RepeatVoteTime).ToShortTimeString();
+                    ArenaManager.GetPlayersInArena(arena).ForEach(plr =>
+                        plr.SendInfoMessage($"Map {map.Name} setted.\n" +
+                                            $"Next vote will be available in {nextVoteTime}"));
+                    Votings.RemoveAt(i);
+                }
+        }
+
         private void AreaFromPoints(ref Point min, ref Point max)
         {
             if(min.X > max.X)
@@ -199,6 +223,7 @@ namespace PvpArena
                 max.Y = temp;
             }
         }
+
         private void SetPoints(Point point, PlayerInfo playerInfo, TSPlayer player)
         {
             switch (playerInfo.State)
@@ -381,6 +406,7 @@ namespace PvpArena
 
             }
         }
+
         private bool CheckAlign(TSPlayer player, string align)
         {
             var aligns = new string[]
@@ -400,6 +426,7 @@ namespace PvpArena
             player.SendErrorMessage("Invalid align. Available aligns: c, t, b, l, r, tl, tr, bl, br");
             return false;
         }
+
         private void ArenaCmd(CommandArgs args)
         {
             string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
@@ -631,6 +658,95 @@ namespace PvpArena
 
                 default:
                     args.Player.SendErrorMessage("Invalid sub command! Check /arena help for more details.");
+                    break;
+            }
+        }
+    
+        private void VoteCmd(CommandArgs args)
+        {
+            string subCmd = args.Parameters.Count == 0 ? "help" : args.Parameters[0];
+            var arena = ArenaManager.InArea(args.Player);
+            if(arena == null && subCmd != "help")
+            {
+                args.Player.SendErrorMessage("You must be in arena to use this command!");
+                return;
+            }
+            switch (subCmd)
+            {
+                case "info":
+                    int page = 1;
+                    if (args.Parameters.Count > 1)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    var voting = Votings.Find(v => v.Arena == arena);
+                    if (voting == null)
+                    {
+                        args.Player.SendErrorMessage("Not have active voting!");
+                        return;
+                    }
+                    var infoList = voting.GetInfo();
+                    PaginationTools.SendPage(args.Player, page, infoList,
+                        new PaginationTools.Settings()
+                        {
+                            HeaderFormat = "Vote info ({0}/{1}):\nId | Map | Vote Count",
+                            FooterFormat = "Type /vote help {0} for more.",
+                        });
+                    break;
+                #region Help
+                case "help":
+                    page = 1;
+                    if (args.Parameters.Count > 1)
+                        if (!int.TryParse(args.Parameters[1], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    var helpList = new List<string>
+                    {
+                        "To use this command you must be in arena.",
+                        "/vote <mapId> - vote for map by id in /vote info.",
+                        "/vote <mapName> - vote or add map by name.",
+                        "/vote info - get map list and they votes."
+                    };
+                    PaginationTools.SendPage(args.Player, page, helpList,
+                        new PaginationTools.Settings()
+                        {
+                            HeaderFormat = "Vote help ({0}/{1}):",
+                            FooterFormat = "Type /vote help {0} for more.",
+                        });
+                    break;
+                #endregion
+
+                default:
+                    voting = Votings.Find(v => v.Arena == arena);
+                    Map map;
+                    if (int.TryParse(subCmd, out int id) && voting != null)
+                        map = voting.GetMapById(id);
+                    else
+                        map = MapManager.GetMapByName(subCmd);
+
+                    if(map == null)
+                    {
+
+                        args.Player.SendErrorMessage($"Invalid map {subCmd}");
+                        return;
+                    }
+
+                    if(voting == null)
+                    {
+                        if(arena.LastVote.AddSeconds(Config.RepeatVoteTime) < DateTime.Now)
+                        {
+                            args.Player.SendErrorMessage($"Next will be available in {arena.LastVote.AddSeconds(Config.RepeatVoteTime).ToShortTimeString()}");
+                            return;
+                        }
+                        Votings.Add(new Voting(arena, Config.VoteTime, ref ArenaManager));
+                    }
+                    voting.RegistVote(args.Player, map);
+
+                    args.Player.SendSuccessMessage("Success vote!");
                     break;
             }
         }

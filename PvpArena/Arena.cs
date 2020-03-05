@@ -15,7 +15,7 @@ namespace PvpArena
         public Point Position;
         public Point Size;
         public string Align;
-
+        public DateTime LastVote;
         public Point MapPoint
         {
             get

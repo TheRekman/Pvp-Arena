@@ -9,7 +9,7 @@ using TShockAPI.DB;
 
 namespace PvpArena
 {
-    class Voting
+    public class Voting
     {
         public DateTime TimeStart { get; private set; }
         public DateTime EndDateTime
@@ -20,7 +20,7 @@ namespace PvpArena
             }
         }
         int EndTime;
-        Arena Arena;
+        public Arena Arena;
         List<Map> Maps;
         ArenaManager ArenaManager;
         List<Vote> Votes;
@@ -34,10 +34,6 @@ namespace PvpArena
             Maps = new List<Map>{Arena.Map};
             arenaManager.GetPlayersInArena(arena).ForEach(plr =>
                 plr.SendInfoMessage("Map vote started! Use /vote for map vote or add new in vote."));
-        }
-        public void Start()
-        {
-            
         }
         public void RegistVote(TSPlayer tSPlayer, Map map)
         {
@@ -53,11 +49,18 @@ namespace PvpArena
             Votes.Add(new Vote(tSPlayer, Maps.IndexOf(map)));
         }
 
+        public Map GetMapById(int id)
+        {
+            if (id <= Maps.Count)
+                return Maps[id];
+            return null;
+        }
+
         public List<string> GetInfo()
         {
             var result = new List<string>();
             for (int i = 0; i < Maps.Count; i++)
-                result.Add($"{Maps[i]} - {VoteCount(Maps[i])}");
+                result.Add($"{i}. {Maps[i]} - {VoteCount(Maps[i])}");
             return result;
         }
         public int VoteCount(Map map)

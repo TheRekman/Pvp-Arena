@@ -11,12 +11,9 @@ namespace PvpArena
     public class Config
     {
 
-        public int ArenaWidthMax = 500;
-        public int ArenaHeightMax = 300;
-        public int ArenaWidthMin = 100;
-        public int ArenaHeightMin = 70;
         public bool PrivateAutoCreate = true;
-        public int ArenaCountMax = 3;
+        public int VoteTime = 600;
+        public int RepeatVoteTime = 1300;
 
         public string MySqlHost = "";
         public string MySqlDbName = "";
