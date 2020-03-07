@@ -146,7 +146,7 @@ namespace PvpArena
         {
             List<TSPlayer> result = new List<TSPlayer>();
             for (int i = 0; i < TShock.Players.Count(); i++)
-                if (TShock.Players[i].Active && CheckInArea(TShock.Players[i], arena))
+                if (TShock.Players[i] != null && CheckInArea(TShock.Players[i], arena))
                     result.Add(TShock.Players[i]);
             return result;
         }

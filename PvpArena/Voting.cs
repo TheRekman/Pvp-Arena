@@ -31,7 +31,8 @@ namespace PvpArena
             EndTime = time;
             ArenaManager = arenaManager;
             TimeStart = DateTime.Now;
-            Maps = new List<Map>{Arena.Map};
+            Maps = new List<Map> { Arena.Map };
+            Votes = new List<Vote>();
             arenaManager.GetPlayersInArena(arena).ForEach(plr =>
                 plr.SendInfoMessage("Map vote started! Use /vote for map vote or add new in vote."));
         }
@@ -51,16 +52,25 @@ namespace PvpArena
 
         public Map GetMapById(int id)
         {
-            if (id <= Maps.Count)
+            if (id < Maps.Count)
                 return Maps[id];
             return null;
         }
 
+        public TimeSpan VoteTime
+        {
+            get
+            {
+                return EndDateTime - DateTime.Now;
+            }
+        }
         public List<string> GetInfo()
         {
             var result = new List<string>();
+
             for (int i = 0; i < Maps.Count; i++)
-                result.Add($"{i}. {Maps[i]} - {VoteCount(Maps[i])}");
+                result.Add($"{i}. {Maps[i].Name} - {VoteCount(Maps[i])}");
+            
             return result;
         }
         public int VoteCount(Map map)
@@ -80,9 +90,6 @@ namespace PvpArena
                     result = Maps[i];
             return result;
         }
-        public bool CheckEnd()
-        {
-            return DateTime.Now > EndDateTime;
-        }
+        public bool CheckEnd() => DateTime.Now > EndDateTime;
     }
 }

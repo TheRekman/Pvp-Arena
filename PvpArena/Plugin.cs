@@ -200,10 +200,10 @@ namespace PvpArena
                     var map = Votings[i].GetWinner();
                     ArenaManager.SetMap(arena, map);
                     arena.LastVote = DateTime.Now;
-                    var nextVoteTime = DateTime.Now.AddSeconds(Config.RepeatVoteTime).ToShortTimeString();
+                    var nextVote = TimeSpan.FromSeconds(Config.RepeatVoteTime);
                     ArenaManager.GetPlayersInArena(arena).ForEach(plr =>
-                        plr.SendInfoMessage($"Map {map.Name} setted.\n" +
-                                            $"Next vote will be available in {nextVoteTime}"));
+                        plr.SendInfoMessage("Vote ended. Next vote will be available in {0}h:{1}m:{2}s",
+                                             nextVote.Hours, nextVote.Minutes, nextVote.Seconds));
                     Votings.RemoveAt(i);
                 }
         }
@@ -688,11 +688,14 @@ namespace PvpArena
                         return;
                     }
                     var infoList = voting.GetInfo();
+                    var nextVote = voting.EndDateTime - DateTime.Now;
                     PaginationTools.SendPage(args.Player, page, infoList,
                         new PaginationTools.Settings()
                         {
                             HeaderFormat = "Vote info ({0}/{1}):\nId | Map | Vote Count",
-                            FooterFormat = "Type /vote help {0} for more.",
+                            FooterFormat = "Type /vote help {0} for more.\n"+
+                                           string.Format("Vote end in in {0}h:{1}m:{2}s",
+                                             nextVote.Hours, nextVote.Minutes, nextVote.Seconds),
                         });
                     break;
                 #region Help
@@ -721,6 +724,7 @@ namespace PvpArena
                 #endregion
 
                 default:
+                    
                     voting = Votings.Find(v => v.Arena == arena);
                     Map map;
                     if (int.TryParse(subCmd, out int id) && voting != null)
@@ -737,15 +741,17 @@ namespace PvpArena
 
                     if(voting == null)
                     {
-                        if(arena.LastVote.AddSeconds(Config.RepeatVoteTime) < DateTime.Now)
+                        if(arena.LastVote.AddSeconds(Config.RepeatVoteTime) > DateTime.Now)
                         {
-                            args.Player.SendErrorMessage($"Next will be available in {arena.LastVote.AddSeconds(Config.RepeatVoteTime).ToShortTimeString()}");
+                            nextVote = arena.LastVote.AddSeconds(Config.RepeatVoteTime) - DateTime.Now;
+                            args.Player.SendErrorMessage("Next vote will be available in {0}h:{1}m:{2}s",
+                                                         nextVote.Hours, nextVote.Minutes, nextVote.Seconds);
                             return;
                         }
                         Votings.Add(new Voting(arena, Config.VoteTime, ref ArenaManager));
+                        voting = Votings.Last();
                     }
                     voting.RegistVote(args.Player, map);
-
                     args.Player.SendSuccessMessage("Success vote!");
                     break;
             }

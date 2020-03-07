@@ -12,7 +12,7 @@ namespace PvpArena
     {
 
         public bool PrivateAutoCreate = true;
-        public int VoteTime = 600;
+        public int VoteTime = 120;
         public int RepeatVoteTime = 1300;
 
         public string MySqlHost = "";
