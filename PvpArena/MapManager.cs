@@ -26,12 +26,21 @@ namespace PvpArena
             {
                 List<string> result = new List<string>();
                 Maps.ForEach(map =>
-                    result.Add(string.Format("Name: {0}; Width: {1}; Height: {2};",
-                                              map.Name, map.Size.X, map.Size.Y))
+                    result.Add(map.Name)
                 );
                 return result;
             }
         }
+
+        public List<string> GetMapInfo(Map map)
+            =>
+            new List<string>
+            {
+                $"Name: {map.Name}",
+                $"Width: {map.Size.X}; Height: {map.Size.Y}",
+                $"Spawn Count: {map.Spawns.Length}",
+            };
+
         public void DeleteMap(Map map)
         {
             Maps.Remove(map);

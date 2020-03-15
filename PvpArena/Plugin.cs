@@ -66,7 +66,7 @@ namespace PvpArena
                 Dispose(true);
                 return;
             }
-            ArenaManager = new ArenaManager(db, MapManager);
+            ArenaManager = new ArenaManager(db, ref MapManager);
             Votings = new List<Voting>();
             Commands.ChatCommands.Add(new Command(Permissions.MapUse, MapCmd, "map"));
             Commands.ChatCommands.Add(new Command(Permissions.ArenaUse, ArenaCmd, "arena"));
@@ -84,7 +84,7 @@ namespace PvpArena
                     TShock.Log.ConsoleError("[PvpArena] MySQL is enabled, but the PvpArena MySQL Configuration has not been set.");
                     TShock.Log.ConsoleError("[PvpArena] Please configure your MySQL server information in [PvpArena]-Config.json, then restart the server.");
                     TShock.Log.ConsoleError("[PvpArena] This plugin will now disable itself...");
-
+                    Dispose(true);
                     return null;
                 }
                 string[] host = Config.MySqlHost.Split(':');
@@ -133,6 +133,7 @@ namespace PvpArena
                     args.Handled = true;
                     break;
                 #endregion
+
                 #region OnMassWire
                 case PacketTypes.MassWireOperation:
                     playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
@@ -156,28 +157,22 @@ namespace PvpArena
                     args.Handled = true;
                     break;
                 #endregion
+
                 #region OnDeath
                 case PacketTypes.PlayerDeathV2:
                     var arena = ArenaManager.InArea(TShock.Players[args.Msg.whoAmI]);
                     if (arena == null) return;
-                    using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
+                    if (TShock.Players[args.Msg.whoAmI].TPlayer.hostile)
                     {
-                        reader.ReadByte();
-                        Terraria.DataStructures.PlayerDeathReason.FromReader(reader);
-                        reader.ReadInt16();
-                        reader.ReadByte();
-                        BitsByte bitsByte = reader.ReadByte();
-                        if(bitsByte[0])
-                        {
-                            playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
-                            Random rnd = new Random();
-                            Point spawnPoint = arena.Map.Spawns[rnd.Next(0, arena.Map.Spawns.Length - 1)];
-                            playerInfo.SpawnPoint = new Point((spawnPoint.X + arena.MapPoint.X) * 16,
-                                                              (spawnPoint.Y + arena.MapPoint.Y) * 16);
-                        }
+                        playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
+                        Random rnd = new Random();
+                        Point spawnPoint = arena.Map.Spawns[rnd.Next(0, arena.Map.Spawns.Length - 1)];
+                        playerInfo.SpawnPoint = new Point((spawnPoint.X + arena.MapPoint.X) * 16,
+                                                          (spawnPoint.Y + arena.MapPoint.Y) * 16);
                     }
                     break;
                 #endregion
+
                 #region OnSpawn
                 case PacketTypes.PlayerSpawn:
                     playerInfo = TShock.Players[args.Msg.whoAmI].GetPlayerInfo();
@@ -186,7 +181,7 @@ namespace PvpArena
                     playerInfo.SpawnPoint.X = -1;
                     TShock.Players[args.Msg.whoAmI].SendInfoMessage("You automatically teleported to the arena.");
                     break;
-                    #endregion
+               #endregion
 
             }
         }
@@ -202,8 +197,7 @@ namespace PvpArena
                     arena.LastVote = DateTime.Now;
                     var nextVote = TimeSpan.FromSeconds(Config.RepeatVoteTime);
                     ArenaManager.GetPlayersInArena(arena).ForEach(plr =>
-                        plr.SendInfoMessage("Vote ended. Next vote will be available in {0}h:{1}m:{2}s",
-                                             nextVote.Hours, nextVote.Minutes, nextVote.Seconds));
+                        plr.SendInfoMessage($"Next vote will be available in {GenerateTimeString(nextVote)}"));
                     Votings.RemoveAt(i);
                 }
         }
@@ -305,6 +299,7 @@ namespace PvpArena
 
             switch (subCmd)
             {
+                #region Save
                 case "save":
                     if (args.Parameters.Count < 2)
                     {
@@ -317,6 +312,9 @@ namespace PvpArena
                     playerInfo.Name = name;
                     args.Player.SendInfoMessage("Set 2 points or use the grand design.");
                     break;
+                #endregion
+
+                #region load
                 case "load":
                     if (args.Parameters.Count < 2)
                     {
@@ -335,6 +333,8 @@ namespace PvpArena
                     playerInfo.Name = name;
                     args.Player.SendInfoMessage("Set point for map load.");
                     break;
+                #endregion
+                #region Del
                 case "del":
                     if (args.Parameters.Count < 2)
                     {
@@ -350,6 +350,8 @@ namespace PvpArena
                     MapManager.DeleteMap(map);
                     args.Player.SendSuccessMessage("Map deleted  successfully!");
                     break;
+                #endregion
+                #region End
                 case "end":
                     playerInfo = args.Player.GetPlayerInfo();
                     if(playerInfo.State != State.MapSaveSetSpawns)
@@ -362,15 +364,46 @@ namespace PvpArena
                     playerInfo.Spawns = null;
                     playerInfo.State = State.None;
                     break;
-                case "list":
+                #endregion
+                #region Info
+                case "info":
+
+                    if(args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map info <name> [page]");
+                        return;
+                    }
                     int page = 1;
+                    if (args.Parameters.Count > 2)
+                        if (!int.TryParse(args.Parameters[2], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
+                            return;
+                        }
+                    map = MapManager.GetMapByName(args.Parameters[1]);
+                    if (map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
+                    PaginationTools.SendPage(args.Player, page, MapManager.GetMapInfo(map),
+                        new PaginationTools.Settings()
+                        {
+                            HeaderFormat = "Map info ({0}/{1}):",
+                            FooterFormat = "Type /map info {0} for more.",
+                        });
+                    break;
+                #endregion
+                #region List
+                case "list":
+                    page = 1;
                     if (args.Parameters.Count > 1)
                         if (!int.TryParse(args.Parameters[1], out page))
                         {
                             args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
                             return;
                         }
-                    PaginationTools.SendPage(args.Player, page, MapManager.MapList,
+                    PaginationTools.SendPage(args.Player, page, PaginationTools.BuildLinesFromTerms(MapManager.MapList),
                         new PaginationTools.Settings()
                         {
                             NothingToDisplayString = "Maps not found. Use /map save <name> for map save.",
@@ -378,6 +411,7 @@ namespace PvpArena
                             FooterFormat = "Type /map list {0} for more.",
                         });
                     break;
+                #endregion
                 case "help":
                     page = 1;
                     if (args.Parameters.Count > 1)
@@ -673,6 +707,7 @@ namespace PvpArena
             }
             switch (subCmd)
             {
+                #region info
                 case "info":
                     int page = 1;
                     if (args.Parameters.Count > 1)
@@ -692,12 +727,13 @@ namespace PvpArena
                     PaginationTools.SendPage(args.Player, page, infoList,
                         new PaginationTools.Settings()
                         {
-                            HeaderFormat = "Vote info ({0}/{1}):\nId | Map | Vote Count",
-                            FooterFormat = "Type /vote help {0} for more.\n"+
-                                           string.Format("Vote end in in {0}h:{1}m:{2}s",
-                                             nextVote.Hours, nextVote.Minutes, nextVote.Seconds),
+                            HeaderFormat = "Vote info ({0}/{1}):" +
+                            $"\nVote end in in {GenerateTimeString(nextVote)}" +
+                            "\nId | Map | Vote Count",
                         });
                     break;
+                #endregion
+
                 #region Help
                 case "help":
                     page = 1;
@@ -723,6 +759,7 @@ namespace PvpArena
                     break;
                 #endregion
 
+                #region Vote
                 default:
                     
                     voting = Votings.Find(v => v.Arena == arena);
@@ -744,8 +781,7 @@ namespace PvpArena
                         if(arena.LastVote.AddSeconds(Config.RepeatVoteTime) > DateTime.Now)
                         {
                             nextVote = arena.LastVote.AddSeconds(Config.RepeatVoteTime) - DateTime.Now;
-                            args.Player.SendErrorMessage("Next vote will be available in {0}h:{1}m:{2}s",
-                                                         nextVote.Hours, nextVote.Minutes, nextVote.Seconds);
+                            args.Player.SendErrorMessage($"Next vote will be available in {GenerateTimeString(nextVote)}");
                             return;
                         }
                         Votings.Add(new Voting(arena, Config.VoteTime, ref ArenaManager));
@@ -754,7 +790,18 @@ namespace PvpArena
                     voting.RegistVote(args.Player, map);
                     args.Player.SendSuccessMessage("Success vote!");
                     break;
+                    #endregion
+
             }
+        }
+
+        private string GenerateTimeString(TimeSpan time)
+        {
+            string result = null;
+            if (time.Hours > 0) result += $"{time.Hours}h:";
+            if (time.Minutes > 0 || time.Hours > 0) result += $"{time.Minutes}m:";
+            if (time.Seconds > 0 || time.Minutes > 0 || time.Hours > 0) result += $"{time.Seconds}s"; 
+            return result;
         }
     }
 }

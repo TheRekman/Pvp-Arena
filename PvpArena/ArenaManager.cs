@@ -39,7 +39,7 @@ namespace PvpArena
                 $"Align: {arena.Align};"
             };
 
-        public ArenaManager(IDbConnection db, MapManager mapManager)
+        public ArenaManager(IDbConnection db, ref MapManager mapManager)
         {
             DbConnection = db;
             MapManager = mapManager;
