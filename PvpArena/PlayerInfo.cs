@@ -17,6 +17,7 @@ namespace PvpArena
         public Point Point2;
         public string Align;
         public List<Point> Spawns;
+        public List<string> Tags;
         public Point SpawnPoint;
     }
     public static class PlayerExtension

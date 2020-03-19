@@ -95,8 +95,8 @@ namespace PvpArena
             int startY = Math.Min(first.Y, second.Y);
             int endX = Math.Max(first.X, second.X);
             int endY = Math.Max(first.Y, second.Y);
-            int width = endX - startX;
-            int height = endY - startY;
+            int width = endX - startX + 1;
+            int height = endY - startY + 1;
 
             using (var writer = new BinaryWriter(File.OpenWrite(FilePath)))
             {
@@ -119,7 +119,7 @@ namespace PvpArena
                 var tiles = new ITile[width, height];
                 for (int x = startX; x <= endX; x++)
                     for (int y = startY; y <= endY; y++)
-                        tiles[x, y] = Main.tile[x, y];
+                        tiles[x - startX, y - startY] = Main.tile[x, y];
                 WriteTiles(writer, tiles);
                 #endregion
 
@@ -129,22 +129,21 @@ namespace PvpArena
 
         public void AddTags(Map map, List<string> tags)
         {
-            map.Tags.AddRange(tags);
-            for(int i = 0; i < tags.Count; i++)
+            for (int i = 0; i < tags.Count; i++)
             {
-                bool haveTag = false;
-                for (int j = 0; j < map.Tags.Count; j++)
-                {
-                    if (tags[i] == map.Tags[j])
-                    {
-                        haveTag = true;
-                        continue;
-                    }
-                }
-                if (haveTag) continue;
+                if (map.Tags.Contains(tags[i])) continue;
                 map.Tags.Add(tags[i]);
             }
             RewriteMapTags(map);
+        }
+
+        public void RemoveTag(Map map, string tag)
+        {
+            if (map.Tags.Contains(tag))
+            {
+                map.Tags.Remove(tag);
+                RewriteMapTags(map);
+            }
         }
 
         private void RewriteMapTags(Map map)
@@ -175,8 +174,8 @@ namespace PvpArena
 
         private void WriteTiles(BinaryWriter writer, ITile[,] tiles)
         {
-            for (int x = 0; x <= tiles.GetLength(0); x++)
-                for (int y = 0; y <= tiles.GetLength(1); y++)
+            for (int x = 0; x < tiles.GetLength(0); x++)
+                for (int y = 0; y < tiles.GetLength(1); y++)
                 {
                     writer.Write(tiles[x, y].type); //ushort
                     writer.Write(tiles[x, y].wall); //byte
@@ -218,8 +217,8 @@ namespace PvpArena
         private Tile[,] ReadTiles(BinaryReader reader, int width, int height)
         {
             Tile[,] tiles = new Tile[width, height];
-            for (int i = 0; i <= width; i++)
-                for (int j = 0; j <= height; j++)
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
                 {
                     Tile tile = new Tile();
                     tile.type = reader.ReadUInt16();
@@ -257,8 +256,8 @@ namespace PvpArena
 
                 #region Tile Load
                 var tiles = ReadTiles(reader, width, height);
-                for (int i = 0; i <= width; i++)
-                    for(int j = 0; j <= height; j++)
+                for (int i = 0; i < width; i++)
+                    for(int j = 0; j < height; j++)
                     {
                         int x = i + start.X;
                         int y = j + start.Y;
@@ -275,8 +274,10 @@ namespace PvpArena
         public List<string> GetMapsNameByTag(string tag)
         {
             List<Map> maps;
-            if (!tag.StartsWith("!")) maps = Maps.FindAll(m => m.Tags.Contains(tag.ToLower()));
-            else maps = Maps.FindAll(m => !m.Tags.Contains(tag.ToLower().Remove(0, 1)));
+            if (tag.StartsWith("!"))
+                maps = Maps.FindAll(m => !m.Tags.Contains(tag.Remove(0, 1)));
+            else
+                maps = Maps.FindAll(m => m.Tags.Contains(tag));
             var result = new List<string>();
             maps.ForEach(m => result.Add(m.Name));
             return result;

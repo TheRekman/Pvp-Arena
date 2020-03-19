@@ -10,7 +10,6 @@ namespace PvpArena
 {
     public class Config
     {
-
         public bool PrivateAutoCreate = true;
         public int VoteTime = 120;
         public int RepeatVoteTime = 1300;

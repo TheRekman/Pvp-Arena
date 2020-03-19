@@ -303,18 +303,21 @@ namespace PvpArena
                 case "save":
                     if (args.Parameters.Count < 2)
                     {
-                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map save <name>");
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map save <name> [tags...]");
                         return;
                     }
                     string name = args.Parameters[1];
                     var playerInfo = args.Player.GetPlayerInfo();
                     playerInfo.State = State.MapSave;
                     playerInfo.Name = name;
+                    playerInfo.Tags = new List<string>();
+                    for (int i = 2; i < args.Parameters.Count; i++)
+                        playerInfo.Tags.Add(args.Parameters[i]);
                     args.Player.SendInfoMessage("Set 2 points or use the grand design.");
                     break;
                 #endregion
 
-                #region load
+                #region Load
                 case "load":
                     if (args.Parameters.Count < 2)
                     {
@@ -334,6 +337,7 @@ namespace PvpArena
                     args.Player.SendInfoMessage("Set point for map load.");
                     break;
                 #endregion
+                
                 #region Del
                 case "del":
                     if (args.Parameters.Count < 2)
@@ -351,6 +355,7 @@ namespace PvpArena
                     args.Player.SendSuccessMessage("Map deleted  successfully!");
                     break;
                 #endregion
+
                 #region End
                 case "end":
                     playerInfo = args.Player.GetPlayerInfo();
@@ -359,41 +364,46 @@ namespace PvpArena
                         args.Player.SendErrorMessage("You dont have active spawn define request. Use /region define and set map area.");
                         return;
                     }
-                    MapManager.SaveMap(playerInfo.Name, playerInfo.Point, playerInfo.Point2, playerInfo.Spawns.ToArray());
+                    MapManager.SaveMap(playerInfo.Name, playerInfo.Point, playerInfo.Point2, playerInfo.Spawns.ToArray(), playerInfo.Tags);
                     args.Player.SendSuccessMessage("Map successfully saved.");
                     playerInfo.Spawns = null;
+                    playerInfo.Tags = null;
                     playerInfo.State = State.None;
                     break;
                 #endregion
+
                 #region Info
                 case "info":
-
                     if(args.Parameters.Count < 2)
                     {
                         args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map info <name> [page]");
                         return;
                     }
-                    int page = 1;
-                    if (args.Parameters.Count > 2)
-                        if (!int.TryParse(args.Parameters[2], out page))
-                        {
-                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[1]}.");
-                            return;
-                        }
+
                     map = MapManager.GetMapByName(args.Parameters[1]);
                     if (map == null)
                     {
                         args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
                         return;
                     }
+
+                    int page = 1;
+                    if (args.Parameters.Count > 2)
+                        if (!int.TryParse(args.Parameters[2], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[2]}.");
+                            return;
+                        }
+                    
                     PaginationTools.SendPage(args.Player, page, MapManager.GetMapInfo(map),
                         new PaginationTools.Settings()
                         {
                             HeaderFormat = "Map info ({0}/{1}):",
-                            FooterFormat = "Type /map info {0} for more.",
+                            FooterFormat = "Type /map info " + args.Parameters[1] + " {0} for more.",
                         });
                     break;
                 #endregion
+
                 #region List
                 case "list":
                     page = 1;
@@ -412,6 +422,120 @@ namespace PvpArena
                         });
                     break;
                 #endregion
+
+                #region Tag
+                case "tag":
+                    page = 1;
+                    if (args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map tag <tag> [page]");
+                        return;
+                    }
+                    if (args.Parameters.Count > 2)
+                        if (!int.TryParse(args.Parameters[2], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[2]}.");
+                            return;
+                        }
+                    PaginationTools.SendPage(args.Player, page, PaginationTools.BuildLinesFromTerms(MapManager.GetMapsNameByTag(args.Parameters[1])),
+                        new PaginationTools.Settings()
+                        {
+                            NothingToDisplayString = "No maps with this tag.",
+                            HeaderFormat = "Maps with " + args.Parameters[1] + " tag ({0}/{1}):",
+                            FooterFormat = "Type /map tag " + args.Parameters[1] + " {0} for more.",
+                        });
+                    break;
+                #endregion
+
+                #region AddTags
+                case "addtags":
+                case "at":
+                    if(args.Parameters.Count < 3)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map addtags <name> <tags...>");
+                        return;
+                    }
+                    
+                    map = MapManager.GetMapByName(args.Parameters[1]);
+                    if (map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
+
+                    
+                    var tagList = new List<string>();
+                    for (int i = 2; i < args.Parameters.Count; i++)
+                        tagList.Add(args.Parameters[i]);
+                    MapManager.AddTags(map, tagList);
+                    args.Player.SendSuccessMessage($"Successfully added tags for map.");
+                    break;
+                #endregion
+
+                #region RemoveTag
+                case "removetag":
+                case "rt":
+                    if (args.Parameters.Count < 3)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map addtags <name> <tags...>");
+                        return;
+                    }
+
+                    map = MapManager.GetMapByName(args.Parameters[1]);
+                    if (map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
+
+                    string tag = args.Parameters[2];
+                    if(!map.Tags.Contains(tag))
+                    {
+                        args.Player.SendErrorMessage($"Map don't have specific tag.");
+                        return;
+                    }
+
+                    MapManager.RemoveTag(map, tag);
+                    args.Player.SendSuccessMessage($"Successfully removed tags for map.");
+                    break;
+                #endregion
+
+                #region MapTags
+                case "maptags":
+                case "mt":
+                    if (args.Parameters.Count < 2)
+                    {
+                        args.Player.SendErrorMessage("Invalid syntax! Proper syntax: /map maptags <name> [page]");
+                        return;
+                    }
+
+                    map = MapManager.GetMapByName(args.Parameters[1]);
+                    if (map == null)
+                    {
+                        args.Player.SendErrorMessage($"Map with name {args.Parameters[1]} has not defined.");
+                        return;
+                    }
+
+                    page = 1;
+                    if (args.Parameters.Count > 2)
+                        if (!int.TryParse(args.Parameters[2], out page))
+                        {
+                            args.Player.SendErrorMessage($"Invalid number {args.Parameters[2]}.");
+                            return;
+                        }
+
+                    PaginationTools.SendPage(args.Player, page, PaginationTools.BuildLinesFromTerms(map.Tags),
+                        new PaginationTools.Settings()
+                        {
+                            NothingToDisplayString = "No tags for this map.",
+                            HeaderFormat = "Map tags ({0}/{1}):",
+                            FooterFormat = "Type /map maptags " + args.Parameters[1] + " {0} for more.",
+                        });
+
+                    break;
+                #endregion
+
+                #region Help
                 case "help":
                     page = 1;
                     if (args.Parameters.Count > 1)
@@ -422,10 +546,14 @@ namespace PvpArena
                         }
                     var helpList = new List<string>
                     {
-                        "save <mapname> - map save in file;",
+                        "save <mapname> [tags...] - map save in file;",
                         "load <mapname> - map load from file;",
                         "del <mapname> - delete map file;",
-                        "list [page] - map list;"
+                        "list [page] - map list;",
+                        "tag <tag> - map list with tag;",
+                        "addtags <mapname> <tags...> - add tags for map;",
+                        "removetag <mapname> <tag> - remove tag from map;",
+                        "maptags <mapname> - map tag list."
                     };
                     PaginationTools.SendPage(args.Player, page, helpList,
                         new PaginationTools.Settings()
@@ -434,6 +562,8 @@ namespace PvpArena
                             FooterFormat = "Type /map help {0} for more.",
                         });
                     break;
+                #endregion
+
                 default:
                     args.Player.SendErrorMessage("Invalid sub command! Check /map help for more details.");
                     break;
