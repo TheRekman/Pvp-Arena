@@ -12,8 +12,8 @@ namespace PvpArena
         public string Name { get; }
         public string Path { get; }
         public Point Size { get; }
-
         public Point[] Spawns { get; }
+        public List<string> Tags { get; set; }
 
         public Map(string name, string path, Point size, Point[] spawns)
         {
