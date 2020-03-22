@@ -50,7 +50,7 @@ Plugins adds functional for creating PvP Arena and map for they. Arena allows dy
 
 ``autospawn (as)`` - teleport into arena spawn if player activate pvp.
 
-**P.S. ** ``vote, autochange`` & ``autopvp, autotp, autoinvise`` can not work at the same time.
+**P. S.** ``vote, autochange`` & ``autopvp, autotp, autoinvise`` can not work at the same time.
 
 #### Vote Commands
 To use this command you must be in arena.
