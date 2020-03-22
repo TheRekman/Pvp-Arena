@@ -20,11 +20,9 @@ namespace PvpArena
     {
 
         public override string Author => "Rekman";
-
         public override string Description => "Add functonal for pvp arena";
-
         public override string Name => "PvpArena";
-
+        public override Version Version => new Version("0.1");
 
         public MapManager MapManager;
         public ArenaManager ArenaManager;
@@ -539,7 +537,8 @@ namespace PvpArena
                         "tag <tag> - map list with tag;",
                         "addtags <mapname> <tags...> - add tags for map;",
                         "removetag <mapname> <tag> - remove tag from map;",
-                        "maptags <mapname> - map tag list."
+                        "maptags <mapname> - map tag list;",
+                        "info <mapname> - return map info."
                     };
                     PaginationTools.SendPage(args.Player, page, helpList,
                         new PaginationTools.Settings()
@@ -773,6 +772,7 @@ namespace PvpArena
                     PaginationTools.SendPage(args.Player, page, PaginationTools.BuildLinesFromTerms(ArenaManager.ArenaList),
                         new PaginationTools.Settings()
                         {
+                            NothingToDisplayString = "Arenas not found. Use /arena define for map save",
                             HeaderFormat = "Arena list ({0}/{1}):",
                             FooterFormat = "Type /arena list {0} for more.",
                         });
@@ -909,11 +909,11 @@ namespace PvpArena
                         }
                     helpList = new List<string>
                     {
-                        "define <name> <mapname> [align] [width] [height] - create arena.",
-                        "delete <name> - remove arena.",
-                        "setmap <name> <mapname> - set new map for arena",
-                        "align <name> <align> - set new align for arena",
-                        "info <name> - return info about arena",
+                        "define <arenaname> <mapname> [align] [width] [height] - create arena.",
+                        "delete <arenaname> - remove arena.",
+                        "setmap <arenaname> <mapname> - set new map for arena",
+                        "align <arenaname> <align> - set new align for arena",
+                        "info <arenaname> - return info about arena",
                         "list [page] - return arena list",
                         "addparam <arenaname> <param> - adds param for arena",
                         "removeparam <arenaname> <param> - remove param for arena",
