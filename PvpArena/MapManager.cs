@@ -282,5 +282,14 @@ namespace PvpArena
             maps.ForEach(m => result.Add(m.Name));
             return result;
         }
+        public List<Map> GetMapsByTag(string tag)
+        {
+            List<Map> maps;
+            if (tag.StartsWith("!"))
+                maps = Maps.FindAll(m => !m.Tags.Contains(tag.Remove(0, 1)));
+            else
+                maps = Maps.FindAll(m => m.Tags.Contains(tag));
+            return maps;
+        }
     }
 }

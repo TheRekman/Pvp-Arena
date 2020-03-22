@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Arena.cs" />
     <Compile Include="ArenaManager.cs" />
+    <Compile Include="ParamManager.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="MapManager.cs" />

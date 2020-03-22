@@ -12,5 +12,6 @@ namespace PvpArena
         public static readonly string MapUse = "pvparena.map.use";
         public static readonly string ArenaUse = "pvparena.arena.use";
         public static readonly string VoteUse = "pvparena.vote.use";
+        public static readonly string Ignore = "pvparena.param.igonre";
     }
 }
